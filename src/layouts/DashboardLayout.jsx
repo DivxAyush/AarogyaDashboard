@@ -10,6 +10,7 @@ const DashboardLayout = ({ children }) => {
         minHeight: "100vh",
         bgcolor: "#f0f6ff",
         overflow: "hidden",
+        width: "100vw",
       }}
     >
       <Navbar />
@@ -18,6 +19,7 @@ const DashboardLayout = ({ children }) => {
         component="main"
         sx={{
           boxSizing: "border-box",
+          flexGrow: 1,
           width: "100%",
           minHeight: "100vh",
           bgcolor: "#f0f6ff",
@@ -28,7 +30,7 @@ const DashboardLayout = ({ children }) => {
         <Toolbar sx={{ minHeight: { xs: 56, md: 64 } }} />
         <Box
           sx={{
-            px: { xs: 1, sm: 2, md: 2 },
+            px: { xs: 1.5, md: 3 },
             py: { xs: 2, md: 3 },
             width: "100%",
             boxSizing: "border-box",
