@@ -1,8 +1,6 @@
 import React, { useState, useCallback } from "react";
 import {
   Box,
-  Card,
-  CardContent,
   TextField,
   Button,
   Typography,
@@ -11,19 +9,23 @@ import {
   Alert,
   CircularProgress,
   Divider,
+  Grid,
+  Checkbox,
+  FormControlLabel,
+  Link,
+  Paper,
 } from "@mui/material";
 import PersonOutlineIcon from "@mui/icons-material/Person";
 import LockOutlinedIcon from "@mui/icons-material/Lock";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import LocalHospitalIcon from "@mui/icons-material/LocalHospital";
+import BarChartIcon from "@mui/icons-material/BarChart";
+import PieChartIcon from "@mui/icons-material/PieChart";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import { useNavigate } from "react-router-dom";
 import { STORAGE_KEYS, ROUTES } from "../utils/constants";
 import { getToken } from "../api/api_fun";
-
-// ─────────────────────────────────────────────
-// Login Page — Modern Authentication UI
-// ─────────────────────────────────────────────
 
 const Login = () => {
   const navigate = useNavigate();
@@ -69,16 +71,12 @@ const Login = () => {
       setError("");
 
       try {
-        // ── Real Superset Authentication ──────────────
         const token = await getToken(form.username, form.password);
-
-        // Token aur user info localStorage mein save karo
         localStorage.setItem(STORAGE_KEYS.TOKEN, token);
         localStorage.setItem(
           STORAGE_KEYS.USER,
           JSON.stringify({ username: form.username, role: "User" })
         );
-
         navigate(ROUTES.DASHBOARD, { replace: true });
       } catch (err) {
         setError(err.message || "Login failed. Please check your credentials.");
@@ -90,255 +88,344 @@ const Login = () => {
   );
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "linear-gradient(135deg, #e3f2fd 0%, #f0f6ff 40%, #bbdefb 100%)",
-        backgroundImage:
-          "radial-gradient(ellipse at 20% 50%, rgba(25,118,210,0.15) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(2,136,209,0.10) 0%, transparent 60%)",
-        p: 2,
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      {/* Background decorative circles */}
-      <Box
-        sx={{
-          position: "absolute",
-          width: 400,
-          height: 400,
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(25,118,210,0.08), transparent 70%)",
-          top: "-10%",
-          left: "-5%",
-          pointerEvents: "none",
-        }}
-      />
-      <Box
-        sx={{
-          position: "absolute",
-          width: 300,
-          height: 300,
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(2,136,209,0.06), transparent 70%)",
-          bottom: "5%",
-          right: "5%",
-          pointerEvents: "none",
-        }}
-      />
+    <Box sx={{ height: "100vh", width: "100vw", display: "flex", overflow: "hidden" }}>
 
+      {/* LEFT SIDE: FORM */}
       <Box
         sx={{
-          width: "100%",
-          maxWidth: 440,
-          position: "relative",
-          zIndex: 1,
+          width: { xs: "100%", md: "45%", lg: "40%" },
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          bgcolor: "#ffffff",
+          px: { xs: 4, sm: 8, md: 6, lg: 8 },
+          py: { xs: 4, md: 4, lg: 5 },
+          zIndex: 2,
+          boxShadow: { md: "20px 0 40px rgba(0,0,0,0.03)" }
         }}
       >
-        {/* Logo & Branding */}
-        <Box sx={{ textAlign: "center", mb: 4 }}>
+        {/* Header (Logo) */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexShrink: 0 }}>
           <Box
             sx={{
-              width: 72,
-              height: 72,
-              borderRadius: "22px",
-              background: "linear-gradient(135deg, #0d47a1 0%, #42a5f5 100%)",
-              display: "inline-flex",
+              width: 36,
+              height: 36,
+              borderRadius: "10px",
+              background: "linear-gradient(135deg, #1565c0 0%, #42a5f5 100%)",
+              display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 12px 40px rgba(25,118,210,0.30)",
-              mb: 2,
+              boxShadow: "0 4px 12px rgba(25,118,210,0.25)"
             }}
           >
-            <LocalHospitalIcon sx={{ color: "#fff", fontSize: 36 }} />
+            <LocalHospitalIcon sx={{ color: "#fff", fontSize: 20 }} />
           </Box>
-          <Typography
-            variant="h4"
-            sx={{ fontWeight: 900, color: "#0d47a1", letterSpacing: -0.5 }}
-          >
-            AarogyaDashBoard
-          </Typography>
-          <Typography variant="body2" sx={{ color: "#78909c", mt: 0.5 }}>
-            Healthcare Analytics Platform
+          <Typography variant="h6" sx={{ fontWeight: 800, color: "#1e293b", letterSpacing: -0.5 }}>
+            Aarogya
           </Typography>
         </Box>
 
-        {/* Login Card */}
-        <Card
-          elevation={0}
-          sx={{
-            borderRadius: "24px",
-            background: "rgba(255,255,255,0.88)",
-            backdropFilter: "blur(20px)",
-            border: "1px solid rgba(255,255,255,0.9)",
-            boxShadow: "0 20px 60px rgba(25,118,210,0.15)",
-          }}
-        >
-          <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
-            <Typography
-              variant="h6"
-              sx={{ fontWeight: 700, color: "#1a2035", mb: 0.5 }}
-            >
-              Sign In
+        {/* Center Form Area */}
+        <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column", justifyContent: "center", width: "100%", maxWidth: 460, mx: "auto" }}>
+
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h3" sx={{ fontWeight: 800, color: "#0f172a", mb: 1, fontSize: { xs: "2rem", md: "2.5rem" }, letterSpacing: -1 }}>
+              Welcome Back
             </Typography>
-            <Typography variant="body2" sx={{ color: "#90a4ae", mb: 3 }}>
-              Enter your credentials to access the dashboard
+            <Typography variant="body1" sx={{ color: "#64748b" }}>
+              Enter your username and password to access your account.
             </Typography>
+          </Box>
 
-            {error && (
-              <Alert
-                severity="error"
-                sx={{ borderRadius: "12px", mb: 2.5, fontSize: "0.85rem" }}
-                onClose={() => setError("")}
-              >
-                {error}
-              </Alert>
-            )}
+          {error && (
+            <Alert severity="error" sx={{ mb: 3, borderRadius: "10px" }} onClose={() => setError("")}>
+              {error}
+            </Alert>
+          )}
 
-            <Box component="form" onSubmit={handleSubmit} noValidate>
-              {/* Username Field */}
-              <TextField
-                id="login-username"
-                name="username"
-                label="Username"
-                value={form.username}
-                onChange={handleChange}
-                error={!!errors.username}
-                helperText={errors.username}
-                fullWidth
-                autoComplete="username"
-                autoFocus
-                disabled={loading}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <PersonOutlineIcon sx={{ color: "#90a4ae" }} />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  mb: 2.5,
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: "14px",
-                    "&:hover fieldset": { borderColor: "#1976d2" },
-                    "&.Mui-focused fieldset": { borderColor: "#1976d2", borderWidth: 2 },
-                  },
-                }}
+          <form onSubmit={handleSubmit}>
+            <Typography variant="body2" sx={{ fontWeight: 600, color: "#334155", mb: 1 }}>
+              Username
+            </Typography>
+            <TextField
+              fullWidth
+              name="username"
+              placeholder="username"
+              value={form.username}
+              onChange={handleChange}
+              error={!!errors.username}
+              helperText={errors.username}
+              disabled={loading}
+              sx={{ mb: 2.5, "& .MuiOutlinedInput-root": { borderRadius: "10px", bgcolor: "#f8fafc" } }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <PersonOutlineIcon sx={{ color: "#94a3b8" }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <Typography variant="body2" sx={{ fontWeight: 600, color: "#334155", mb: 1 }}>
+              Password
+            </Typography>
+            <TextField
+              fullWidth
+              name="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Enter password"
+              value={form.password}
+              onChange={handleChange}
+              error={!!errors.password}
+              helperText={errors.password}
+              disabled={loading}
+              sx={{ mb: 2, "& .MuiOutlinedInput-root": { borderRadius: "10px", bgcolor: "#f8fafc" } }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LockOutlinedIcon sx={{ color: "#94a3b8" }} />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={handleTogglePassword} edge="end" size="small">
+                      {showPassword ? <VisibilityOffIcon sx={{ color: "#94a3b8", fontSize: 20 }} /> : <VisibilityIcon sx={{ color: "#94a3b8", fontSize: 20 }} />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+              <FormControlLabel
+                control={<Checkbox size="small" sx={{ color: "#cbd5e1", padding: "4px", "&.Mui-checked": { color: "#1976d2" } }} />}
+                label={<Typography variant="body2" sx={{ color: "#64748b" }}>Remember Me</Typography>}
               />
-
-              {/* Password Field */}
-              <TextField
-                id="login-password"
-                name="password"
-                label="Password"
-                type={showPassword ? "text" : "password"}
-                value={form.password}
-                onChange={handleChange}
-                error={!!errors.password}
-                helperText={errors.password}
-                fullWidth
-                autoComplete="current-password"
-                disabled={loading}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <LockOutlinedIcon sx={{ color: "#90a4ae" }} />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        id="toggle-password-visibility"
-                        onClick={handleTogglePassword}
-                        edge="end"
-                        tabIndex={-1}
-                        size="small"
-                      >
-                        {showPassword ? (
-                          <VisibilityOffIcon fontSize="small" sx={{ color: "#90a4ae" }} />
-                        ) : (
-                          <VisibilityIcon fontSize="small" sx={{ color: "#90a4ae" }} />
-                        )}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  mb: 3.5,
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: "14px",
-                    "&:hover fieldset": { borderColor: "#1976d2" },
-                    "&.Mui-focused fieldset": { borderColor: "#1976d2", borderWidth: 2 },
-                  },
-                }}
-              />
-
-              {/* Submit Button */}
-              <Button
-                id="login-submit-btn"
-                type="submit"
-                fullWidth
-                variant="contained"
-                disabled={loading}
-                sx={{
-                  py: 1.5,
-                  borderRadius: "14px",
-                  background: loading
-                    ? "#90a4ae"
-                    : "linear-gradient(135deg, #0d47a1 0%, #1976d2 100%)",
-                  boxShadow: loading ? "none" : "0 8px 24px rgba(25,118,210,0.35)",
-                  textTransform: "none",
-                  fontSize: "1rem",
-                  fontWeight: 700,
-                  letterSpacing: 0.3,
-                  transition: "all 0.25s",
-                  "&:hover": {
-                    background: "linear-gradient(135deg, #0a3880 0%, #1565c0 100%)",
-                    boxShadow: "0 12px 32px rgba(25,118,210,0.40)",
-                    transform: "translateY(-1px)",
-                  },
-                  "&:active": { transform: "translateY(0)" },
-                }}
-              >
-                {loading ? (
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                    <CircularProgress size={20} sx={{ color: "#fff" }} />
-                    <span>Signing In…</span>
-                  </Box>
-                ) : (
-                  "Sign In"
-                )}
-              </Button>
+              <Link href="#" underline="hover" sx={{ variant: "body2", color: "#1976d2", fontWeight: 600 }}>
+                Forgot Password?
+              </Link>
             </Box>
 
-            <Box
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              disabled={loading}
               sx={{
-                mt: 3,
-                p: 2,
-                borderRadius: "12px",
-                background: "linear-gradient(135deg, #e3f2fd, #f0f6ff)",
-                border: "1px solid #bbdefb",
-                display: "flex",
-                alignItems: "flex-start",
-                gap: 1,
+                py: 1.5,
+                borderRadius: "10px",
+                textTransform: "none",
+                fontSize: "1.05rem",
+                fontWeight: 700,
+                bgcolor: "#1976d2",
+                boxShadow: "0 8px 20px rgba(25,118,210,0.25)",
+                "&:hover": { bgcolor: "#1565c0" },
+                mb: 4
               }}
             >
-              <Typography variant="caption" sx={{ color: "#1565c0", lineHeight: 1.5 }}>
-                🔐 <strong>Superset credentials</strong>
-              </Typography>
-            </Box>
-          </CardContent>
-        </Card>
+              {loading ? <CircularProgress size={24} color="inherit" /> : "Log In"}
+            </Button>
 
-        <Typography
-          variant="caption"
-          sx={{ display: "block", textAlign: "center", mt: 3, color: "#90a4ae" }}
-        >
-          © {new Date().getFullYear()} AarogyaDashBoard. All rights reserved.
-        </Typography>
+            <Divider sx={{ mb: 4, color: "#94a3b8", fontSize: "0.875rem", "&::before, &::after": { borderColor: "#e2e8f0" } }}>
+              Or Login With
+            </Divider>
+
+            <Grid container spacing={2} sx={{ mb: 4 }}>
+              <Grid item xs={6}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  sx={{
+                    py: 1.2,
+                    borderRadius: "8px",
+                    borderColor: "#e2e8f0",
+                    color: "#475569",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    "&:hover": { bgcolor: "#f8fafc", borderColor: "#cbd5e1" }
+                  }}
+                >
+                  Google
+                </Button>
+              </Grid>
+              <Grid item xs={6}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  sx={{
+                    py: 1.2,
+                    borderRadius: "8px",
+                    borderColor: "#e2e8f0",
+                    color: "#475569",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    "&:hover": { bgcolor: "#f8fafc", borderColor: "#cbd5e1" }
+                  }}
+                >
+                  Apple
+                </Button>
+              </Grid>
+            </Grid>
+
+            <Typography variant="body2" align="center" sx={{ color: "#64748b", display: "block" }}>
+              Don't Have An Account?{" "}
+              <Link href="#" underline="hover" sx={{ color: "#1976d2", fontWeight: 700 }}>
+                Register Now.
+              </Link>
+            </Typography>
+          </form>
+        </Box>
+
+        {/* Footer */}
+        <Box sx={{ display: "flex", justifyContent: "space-between", flexShrink: 0, pt: 2, mt: 2, borderTop: "1px solid #f1f5f9", width: "100%", maxWidth: 460, mx: "auto" }}>
+          <Typography variant="caption" sx={{ color: "#94a3b8" }}>
+            Copyright © 2026 Dataman .
+          </Typography>
+          <Link href="#" underline="hover" sx={{ variant: "caption", color: "#94a3b8" }}>
+            Privacy Policy
+          </Link>
+        </Box>
+      </Box>
+
+      {/* RIGHT SIDE: VISUAL BANNER */}
+      <Box
+        sx={{
+          width: { xs: "0%", md: "55%", lg: "60%" },
+          display: { xs: "none", md: "flex" },
+          flexDirection: "column",
+          justifyContent: "center",
+          background: "linear-gradient(135deg, #1565c0 0%, #1976d2 50%, #0d47a1 100%)",
+          position: "relative",
+          p: { md: 6, lg: 10 },
+          overflow: "hidden"
+        }}
+      >
+        {/* Decorative Background Patterns */}
+        <Box sx={{ position: "absolute", top: "-10%", right: "-10%", width: "60vh", height: "60vh", borderRadius: "50%", background: "radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)" }} />
+        <Box sx={{ position: "absolute", bottom: "-15%", left: "-10%", width: "80vh", height: "80vh", borderRadius: "50%", background: "radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%)" }} />
+        <Box sx={{ position: "absolute", top: "20%", left: "10%", width: "30vh", height: "30vh", borderRadius: "50%", background: "radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)" }} />
+
+        {/* Banner Content Container */}
+        <Box sx={{ position: "relative", zIndex: 1, maxWidth: 650, mx: "auto", width: "100%", display: "flex", flexDirection: "column", height: "100%", justifyContent: "center" }}>
+
+          <Box sx={{ flexShrink: 0, mb: { md: 4, lg: 6 } }}>
+            <Typography variant="h3" sx={{ color: "#fff", fontWeight: 800, mb: 2, lineHeight: 1.2, letterSpacing: -0.5, fontSize: { md: "2.5rem", lg: "3rem" } }}>
+              Effortlessly manage your healthcare operations.
+            </Typography>
+            <Typography variant="h6" sx={{ color: "rgba(255,255,255,0.8)", fontWeight: 400, lineHeight: 1.5, fontSize: { md: "1rem", lg: "1.15rem" } }}>
+              Log in to access your analytics dashboard, monitor collections, and seamlessly manage your hospital's financial health.
+            </Typography>
+          </Box>
+
+          {/* Dashboard Mockup - Scalable Container */}
+          <Box sx={{ position: "relative", width: "100%", flexGrow: 1, minHeight: 250, maxHeight: 400 }}>
+
+            {/* Main Board - Chart Area */}
+            <Paper
+              elevation={24}
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "80%",
+                height: "90%",
+                borderRadius: "16px",
+                bgcolor: "rgba(255,255,255,0.95)",
+                p: { md: 2, lg: 3 },
+                boxShadow: "0 24px 60px rgba(0,0,0,0.2)",
+                display: "flex",
+                flexDirection: "column"
+              }}
+            >
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "#1e293b" }}>Revenue Overview</Typography>
+                <Box sx={{ width: 80, height: 24, borderRadius: "12px", bgcolor: "#e2e8f0" }} />
+              </Box>
+
+              {/* Graph bars representation */}
+              <Box sx={{ width: "100%", flexGrow: 1, borderRadius: "8px", bgcolor: "#f8fafc", display: "flex", alignItems: "flex-end", p: 2, gap: { md: 1, lg: 2 }, mb: 2 }}>
+                <Box sx={{ flex: 1, height: "40%", bgcolor: "#e2e8f0", borderRadius: "4px 4px 0 0" }} />
+                <Box sx={{ flex: 1, height: "65%", bgcolor: "#93c5fd", borderRadius: "4px 4px 0 0" }} />
+                <Box sx={{ flex: 1, height: "90%", bgcolor: "#3b82f6", borderRadius: "4px 4px 0 0" }} />
+                <Box sx={{ flex: 1, height: "55%", bgcolor: "#93c5fd", borderRadius: "4px 4px 0 0" }} />
+                <Box sx={{ flex: 1, height: "75%", bgcolor: "#3b82f6", borderRadius: "4px 4px 0 0" }} />
+                <Box sx={{ flex: 1, height: "100%", bgcolor: "#1d4ed8", borderRadius: "4px 4px 0 0" }} />
+              </Box>
+
+              {/* Stats row inside Mockup */}
+              <Box sx={{ display: "flex", gap: 2, flexShrink: 0, height: 40 }}>
+                <Box sx={{ flex: 1, height: "100%", borderRadius: "6px", bgcolor: "#f1f5f9" }} />
+                <Box sx={{ flex: 1, height: "100%", borderRadius: "6px", bgcolor: "#f1f5f9" }} />
+              </Box>
+            </Paper>
+
+            {/* Floating Widget 1: Pie Chart */}
+            <Paper
+              elevation={12}
+              sx={{
+                position: "absolute",
+                top: -15,
+                right: 0,
+                width: { md: 180, lg: 220 },
+                height: { md: 160, lg: 180 },
+                borderRadius: "16px",
+                bgcolor: "#fff",
+                p: { md: 1.5, lg: 2.5 },
+                boxShadow: "0 16px 40px rgba(0,0,0,0.15)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                zIndex: 2
+              }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: 700, color: "#1e293b", alignSelf: "flex-start", mb: 2 }}>Patient Composition</Typography>
+              <Box sx={{ position: "relative", display: "flex", justifyContent: "center", alignItems: "center", flexGrow: 1 }}>
+                <PieChartIcon sx={{ fontSize: { md: 70, lg: 80 }, color: "#42a5f5", opacity: 0.9 }} />
+                <Box sx={{ position: "absolute", width: { md: 34, lg: 40 }, height: { md: 34, lg: 40 }, borderRadius: "50%", bgcolor: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Typography variant="caption" sx={{ fontWeight: 800, color: "#1565c0" }}>65%</Typography>
+                </Box>
+              </Box>
+              <Box sx={{ display: "flex", gap: 1, mt: 2, width: "100%" }}>
+                <Box sx={{ flex: 1, height: 6, borderRadius: 3, bgcolor: "#42a5f5" }} />
+                <Box sx={{ flex: 1, height: 6, borderRadius: 3, bgcolor: "#e2e8f0" }} />
+              </Box>
+            </Paper>
+
+            {/* Floating Widget 2: Collection Stats */}
+            <Paper
+              elevation={12}
+              sx={{
+                position: "absolute",
+                bottom: { md: 10, lg: 20 },
+                right: { md: -10, lg: -20 },
+                width: { md: 220, lg: 240 },
+                borderRadius: "16px",
+                bgcolor: "#1e293b",
+                p: { md: 2, lg: 2.5 },
+                boxShadow: "0 20px 50px rgba(0,0,0,0.3)",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                zIndex: 3
+              }}
+            >
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: { md: 1, lg: 2 } }}>
+                <Box>
+                  <Typography variant="caption" sx={{ color: "#94a3b8", display: "block", mb: 0.5 }}>Total Collections</Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 800, color: "#fff", letterSpacing: -0.5, fontSize: { md: "1.25rem", lg: "1.5rem" } }}>₹8.40 Cr</Typography>
+                </Box>
+                <Box sx={{ p: 1, borderRadius: "10px", bgcolor: "rgba(59,130,246,0.2)" }}>
+                  <TrendingUpIcon sx={{ color: "#60a5fa", fontSize: { md: 18, lg: 24 } }} />
+                </Box>
+              </Box>
+              <Typography variant="caption" sx={{ color: "#4ade80", fontWeight: 600, display: "flex", alignItems: "center", gap: 0.5 }}>
+                ▲ +14.2% <span style={{ color: "#64748b", fontWeight: 400 }}>from last month</span>
+              </Typography>
+            </Paper>
+
+          </Box>
+        </Box>
+
       </Box>
     </Box>
   );

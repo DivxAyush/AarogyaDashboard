@@ -1,7 +1,15 @@
 import React from "react";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider, createTheme, CssBaseline } from "@mui/material";
-import AppRoutes from "./routes/AppRoutes";
+
+// Import constants
+import { ROUTES, STORAGE_KEYS } from "./utils/constants";
+
+// Import pages directly (removed lazy loading for simplicity)
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import Analytics from "./pages/Analytics";
+import Reports from "./pages/Reports";
 
 // ─────────────────────────────────────────────
 // MUI Theme — Light Blue Corporate Theme
@@ -120,12 +128,33 @@ const theme = createTheme({
   },
 });
 
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+  return token ? children : <Navigate to={ROUTES.LOGIN} replace />;
+};
+
+const PublicRoute = ({ children }) => {
+  const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+  return token ? <Navigate to={ROUTES.DASHBOARD} replace /> : children;
+};
+
 const App = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <BrowserRouter>
-        <AppRoutes />
+        <Routes>
+          {/* Public Route */}
+          <Route path={ROUTES.LOGIN} element={<PublicRoute><Login /></PublicRoute>} />
+
+          {/* Protected Routes */}
+          <Route path={ROUTES.DASHBOARD} element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path={ROUTES.ANALYTICS} element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+          <Route path={ROUTES.REPORTS} element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
+        </Routes>
       </BrowserRouter>
     </ThemeProvider>
   );
