@@ -196,6 +196,7 @@ const Dashboard = () => {
    >
     {STAT_CONFIG.map((stat) => (
      <Grid
+      item
       xs={12}
       sm={4}
       md={4}
