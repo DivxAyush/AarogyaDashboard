@@ -1,0 +1,91 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Root fills full viewport — no max-width, no border */
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background-color: #f0f6ff;
+  font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #1a2035;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #f0f6ff;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #42a5f5, #1976d2);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #1565c0;
+}
+
+/* Text selection */
+::selection {
+  background-color: rgba(25, 118, 210, 0.18);
+  color: #0d47a1;
+}
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid #1976d2;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: #1976d2;
+  text-decoration: none;
+}
+
+/* Override MUI AppBar shadow */
+.MuiAppBar-root {
+  box-shadow: none !important;
+}
+
+/* Recharts responsive */
+.recharts-wrapper {
+  width: 100% !important;
+}
+
+/* Pulse animation for Live badge */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+/* Fade in */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
