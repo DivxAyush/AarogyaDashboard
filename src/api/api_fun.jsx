@@ -78,7 +78,7 @@ export async function getDatasetData(sql) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      database_id: 2,
+      database_id: 3,
       sql: sql,
       runAsync: false,
     }),
@@ -97,3 +97,73 @@ export async function getDatasetData(sql) {
   const data = await res.json();
   return data.data;
 }
+
+export async function getAllCollectionData(filters) {
+  let query = "SELECT * FROM vw_collection WHERE 1=1";
+
+  if (filters) {
+    if (filters.date) {
+      if (filters.date.from) {
+        query += ` AND CAST(date AS DATE) >= '${filters.date.from}'`;
+      }
+      if (filters.date.to) {
+        query += ` AND CAST(date AS DATE) <= '${filters.date.to}'`;
+      }
+    }
+    if (filters.siteCode) {
+      query += ` AND site_code = '${filters.siteCode}'`;
+    }
+    if (filters.speciality) {
+      query += ` AND speciality = '${filters.speciality}'`;
+    }
+  }
+
+  return await getDatasetData(query);
+}
+
+export async function getAllRevenueData(filters) {
+  let query = "SELECT * FROM vw_revenue WHERE 1=1";
+
+  if (filters) {
+    if (filters.date) {
+      if (filters.date.from) {
+        query += ` AND CAST(date AS DATE) >= '${filters.date.from}'`;
+      }
+      if (filters.date.to) {
+        query += ` AND CAST(date AS DATE) <= '${filters.date.to}'`;
+      }
+    }
+    if (filters.siteCode) {
+      query += ` AND site_code = '${filters.siteCode}'`;
+    }
+    if (filters.speciality) {
+      query += ` AND speciality = '${filters.speciality}'`;
+    }
+  }
+
+  return await getDatasetData(query);
+}
+export async function getAllOutstandingData(filters) {
+  let query = "SELECT * FROM vw_outstanding WHERE 1=1";
+
+  if (filters) {
+    if (filters.date) {
+      if (filters.date.from) {
+        query += ` AND CAST(date AS DATE) >= '${filters.date.from}'`;
+      }
+      if (filters.date.to) {
+        query += ` AND CAST(date AS DATE) <= '${filters.date.to}'`;
+      }
+    }
+    if (filters.siteCode) {
+      query += ` AND site_code = '${filters.siteCode}'`;
+    }
+    if (filters.speciality) {
+      query += ` AND speciality = '${filters.speciality}'`;
+    }
+  }
+
+  return await getDatasetData(query);
+}
+
+

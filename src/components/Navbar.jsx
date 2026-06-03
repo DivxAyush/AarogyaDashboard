@@ -63,34 +63,25 @@ const Navbar = () => {
         {/* Logo + Title */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexGrow: 1 }}>
           <Box
+            component="img"
+            src="/logo_icon.png"
+            alt="Logo Icon"
             sx={{
-              width: 36,
-              height: 36,
-              borderRadius: "10px",
-              background: "linear-gradient(135deg, #1565c0 0%, #42a5f5 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              width: { xs: 36, md: 40 },
+              height: { xs: 36, md: 40 },
+              objectFit: "contain",
               flexShrink: 0,
             }}
-          >
-            <Typography sx={{ color: "#fff", fontWeight: 900, fontSize: "1rem", lineHeight: 1 }}>
-              A
-            </Typography>
-          </Box>
-          <Box>
-            <Typography
-              variant={isMobile ? "body1" : "h6"}
-              sx={{ fontWeight: 800, color: "#1565c0", lineHeight: 1, letterSpacing: -0.3 }}
-            >
-              {APP_NAME}
-            </Typography>
-            {!isMobile && (
-              <Typography variant="caption" sx={{ color: "#90a4ae", lineHeight: 1 }}>
-                Healthcare Analytics Platform
-              </Typography>
-            )}
-          </Box>
+          />
+          <Box
+            component="img"
+            src="/logo_text.png"
+            alt={APP_NAME}
+            sx={{
+              height: { xs: 34, md: 42 },
+              objectFit: "contain",
+            }}
+          />
         </Box>
 
         {/* Right actions */}

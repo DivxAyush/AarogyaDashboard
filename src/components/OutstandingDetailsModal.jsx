@@ -32,10 +32,12 @@ import { ROWS_PER_PAGE_OPTIONS } from "../utils/constants";
 // ─────────────────────────────────────────────
 
 const LABEL_MAP = {
-  "date": "Receipt Date",
+  "date": "Bill Date",
+  "Organization": "Organization",
+  "UHID NO": "UHID No",
+
   "site_code": "Site",
   "sit_code": "Site",
-  "UHID NO": "UHID No",
   "uhid": "UHID No",
   "Registration No": "Registration No",
   "reg no": "Registration No",
@@ -49,7 +51,6 @@ const LABEL_MAP = {
   "Module": "Module",
   "module": "Module",
   "category": "Category",
-  "Organization": "Organization",
   "organization": "Organization",
   "Receipt Amount": "Net Amt",
   "receiptamt": "Net Amt",
@@ -83,7 +84,7 @@ const modalStyle = {
   overflow: "hidden",
 };
 
-const PaymentDetailsModal = ({ open, onClose, data, loading, paymentMode }) => {
+const OutstandingDetailsModal = ({ open, onClose, data, loading, paymentMode }) => {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -103,15 +104,20 @@ const PaymentDetailsModal = ({ open, onClose, data, loading, paymentMode }) => {
   }, []);
 
   const columns = useMemo(() => {
-    if (!data || data.length === 0) return [];
-    const firstRow = data[0];
-    return Object.keys(firstRow)
-      .filter(key => !IGNORE_KEYS.includes(key.toLowerCase()))
-      .map(key => ({
-        id: key,
-        label: LABEL_MAP[key] || (key.charAt(0).toUpperCase() + key.slice(1))
-      }));
-  }, [data]);
+    return [
+      { id: "date", label: "Bill Date" },
+      { id: "organization", label: "Organization" },
+      { id: "uhid", label: "UHID No" },
+      { id: "reg no", label: "Registration No" },
+
+      { id: "billno", label: "Bill No" },
+      { id: "patientname", label: "Patient Name" },
+      { id: "consultantname", label: "Consultant" },
+      { id: "module", label: "Module" },
+      { id: "billamount", label: "Bill Amt" },
+      { id: "speciality", label: "Speciality" },
+    ];
+  }, []);
 
   const filteredData = useMemo(() => {
     if (!data || data.length === 0) return [];
@@ -127,17 +133,24 @@ const PaymentDetailsModal = ({ open, onClose, data, loading, paymentMode }) => {
   const totals = useMemo(() => {
     if (!data || data.length === 0) return { collection: 0, refund: 0, netAmt: 0 };
     return data.reduce((acc, row) => {
-      acc.collection += Number(row["collection"] || row["Collection"] || 0); // Gross Collection
-      acc.refund += Number(row["refund"] || row["Refund"] || 0); // Refund
-      acc.netAmt += Number(row["Receipt Amount"] || row["receiptamt"] || 0); // Net Collection
+      const bal = Number(row["balance"] || row["Outstanding"] || row["outstanding"] || 0);
+      const org = (row["organization"] || row["Organization"] || "").trim();
+
+      acc.collection += bal; // Total Outstanding (stored in collection for UI map)
+
+      if (org.toLowerCase() === "cash patient") {
+        acc.refund += bal; // Cash Patient Outstanding (stored in refund for UI map)
+      } else {
+        acc.netAmt += bal; // Organization Outstanding (stored in netAmt for UI map)
+      }
       return acc;
     }, { collection: 0, refund: 0, netAmt: 0 });
   }, [data]);
 
   const summaryLabels = {
-    gross: "Gross Collection",
-    deduction: "Refund",
-    net: "Net Collection"
+    gross: "Total Outstanding",
+    deduction: "Cash Patient Outstanding",
+    net: "Organization Outstanding"
   };
 
   const paginatedData = useMemo(() => {
@@ -203,7 +216,7 @@ const PaymentDetailsModal = ({ open, onClose, data, loading, paymentMode }) => {
             </Box>
             <Box>
               <Typography variant="h5" sx={{ color: "#0f172a", fontWeight: 800, letterSpacing: "-0.5px", lineHeight: 1.2 }}>
-                Collection/Refund Details
+                Outstanding Details
               </Typography>
               {paymentMode && (
                 <Chip
@@ -481,4 +494,4 @@ const PaymentDetailsModal = ({ open, onClose, data, loading, paymentMode }) => {
   );
 };
 
-export default React.memo(PaymentDetailsModal);
+export default React.memo(OutstandingDetailsModal);
