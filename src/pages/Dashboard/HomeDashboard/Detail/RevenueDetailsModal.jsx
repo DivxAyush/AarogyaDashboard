@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo } from "react";
+import { exportToExcel } from "../../../../utils/helper";
 import {
   Modal,
   Box,
@@ -24,7 +25,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import DownloadIcon from "@mui/icons-material/Download";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import ReceiptOutlinedIcon from "@mui/icons-material/ReceiptOutlined";
-import { ROWS_PER_PAGE_OPTIONS } from "../utils/constants";
+import { ROWS_PER_PAGE_OPTIONS } from "../../../../utils/constants";
 
 // ─────────────────────────────────────────────
 // PaymentDetailsModal — Drilldown Data Table
@@ -83,7 +84,7 @@ const modalStyle = {
   overflow: "hidden",
 };
 
-const PaymentDetailsModal = ({ open, onClose, data, loading, paymentMode }) => {
+const RevenueDetailsModal = ({ open, onClose, data, loading, paymentMode }) => {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -103,15 +104,25 @@ const PaymentDetailsModal = ({ open, onClose, data, loading, paymentMode }) => {
   }, []);
 
   const columns = useMemo(() => {
-    if (!data || data.length === 0) return [];
-    const firstRow = data[0];
-    return Object.keys(firstRow)
-      .filter(key => !IGNORE_KEYS.includes(key.toLowerCase()))
-      .map(key => ({
-        id: key,
-        label: LABEL_MAP[key] || (key.charAt(0).toUpperCase() + key.slice(1))
-      }));
-  }, [data]);
+    return [
+      { id: "date", label: "Bill Date" },
+      { id: "billno", label: "Bill No" },
+      { id: "uhid", label: "UHID No" },
+      { id: "ptname", label: "Patient Name" },
+      { id: "consultantname", label: "Consultant" },
+      { id: "speciality", label: "Speciality" },
+      { id: "referredby", label: "Referred By" },
+
+      { id: "servicename", label: "Service Name" },
+      { id: "servicecategory", label: "Service Category" },
+      { id: "organizationname", label: "Organization" },
+      { id: "module", label: "Module" },
+      { id: "pro", label: "PRO" },
+      { id: "grossamount", label: "Gross Revenue" },
+      { id: "discount", label: "Discount" },
+      { id: "oh_amt_net", label: "Net Revenue" }
+    ];
+  }, []);
 
   const filteredData = useMemo(() => {
     if (!data || data.length === 0) return [];
@@ -127,17 +138,17 @@ const PaymentDetailsModal = ({ open, onClose, data, loading, paymentMode }) => {
   const totals = useMemo(() => {
     if (!data || data.length === 0) return { collection: 0, refund: 0, netAmt: 0 };
     return data.reduce((acc, row) => {
-      acc.collection += Number(row["collection"] || row["Collection"] || 0); // Gross Collection
-      acc.refund += Number(row["refund"] || row["Refund"] || 0); // Refund
-      acc.netAmt += Number(row["Receipt Amount"] || row["receiptamt"] || 0); // Net Collection
+      acc.collection += Number(row["billamount"] || row["grossamount"] || row["Grossamount"] || 0); // Gross Revenue
+      acc.refund += Number(row["discount"] || row["Discount"] || 0); // Discount
+      acc.netAmt += Number(row["oh_amt_net"] || row["netsettledamt"] || 0); // Net Revenue
       return acc;
     }, { collection: 0, refund: 0, netAmt: 0 });
   }, [data]);
 
   const summaryLabels = {
-    gross: "Gross Collection",
-    deduction: "Refund",
-    net: "Net Collection"
+    gross: "Gross Revenue",
+    deduction: "Discount",
+    net: "Net Revenue"
   };
 
   const paginatedData = useMemo(() => {
@@ -145,23 +156,9 @@ const PaymentDetailsModal = ({ open, onClose, data, loading, paymentMode }) => {
     return filteredData.slice(start, start + rowsPerPage);
   }, [filteredData, page, rowsPerPage]);
 
-  const handleExportCSV = useCallback(() => {
-    if (!filteredData.length) return;
-    const headers = columns.map((c) => c.label).join(",");
-    const rows = filteredData.map((row) =>
-      columns.map((c) => `"${String(row[c.id] ?? "").replace(/"/g, '""')}"`).join(",")
-    );
-    const csvContent = [headers, ...rows].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `payment_${paymentMode}_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  }, [filteredData, paymentMode]);
+  const handleExportXLSX = useCallback(() => {
+    exportToExcel(filteredData, columns, "Revenue Details", "revenue");
+  }, [filteredData, columns]);
 
   const handleClose = useCallback(() => {
     setSearch("");
@@ -203,7 +200,7 @@ const PaymentDetailsModal = ({ open, onClose, data, loading, paymentMode }) => {
             </Box>
             <Box>
               <Typography variant="h5" sx={{ color: "#0f172a", fontWeight: 800, letterSpacing: "-0.5px", lineHeight: 1.2 }}>
-                Collection/Refund Details
+                Revenue Details
               </Typography>
               {paymentMode && (
                 <Chip
@@ -322,7 +319,7 @@ const PaymentDetailsModal = ({ open, onClose, data, loading, paymentMode }) => {
             variant="contained"
             size="small"
             startIcon={<DownloadIcon />}
-            onClick={handleExportCSV}
+            onClick={handleExportXLSX}
             disabled={!filteredData.length || loading}
             sx={{
               display: { xs: "none", sm: "flex" },
@@ -333,11 +330,11 @@ const PaymentDetailsModal = ({ open, onClose, data, loading, paymentMode }) => {
               px: 2.5,
             }}
           >
-            Export CSV
+            Export Excel
           </Button>
 
           <IconButton
-            onClick={handleExportCSV}
+            onClick={handleExportXLSX}
             disabled={!filteredData.length || loading}
             sx={{
               display: { xs: "flex", sm: "none" },
@@ -481,4 +478,4 @@ const PaymentDetailsModal = ({ open, onClose, data, loading, paymentMode }) => {
   );
 };
 
-export default React.memo(PaymentDetailsModal);
+export default React.memo(RevenueDetailsModal);

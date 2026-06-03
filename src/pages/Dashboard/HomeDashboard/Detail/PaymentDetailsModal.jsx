@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo } from "react";
+import { exportToExcel } from "../../../../utils/helper";
 import {
   Modal,
   Box,
@@ -24,7 +25,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import DownloadIcon from "@mui/icons-material/Download";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import ReceiptOutlinedIcon from "@mui/icons-material/ReceiptOutlined";
-import { ROWS_PER_PAGE_OPTIONS } from "../utils/constants";
+import { ROWS_PER_PAGE_OPTIONS } from "../../../../utils/constants";
 
 // ─────────────────────────────────────────────
 // PaymentDetailsModal — Drilldown Data Table
@@ -32,12 +33,10 @@ import { ROWS_PER_PAGE_OPTIONS } from "../utils/constants";
 // ─────────────────────────────────────────────
 
 const LABEL_MAP = {
-  "date": "Bill Date",
-  "Organization": "Organization",
-  "UHID NO": "UHID No",
-
+  "date": "Receipt Date",
   "site_code": "Site",
   "sit_code": "Site",
+  "UHID NO": "UHID No",
   "uhid": "UHID No",
   "Registration No": "Registration No",
   "reg no": "Registration No",
@@ -51,6 +50,7 @@ const LABEL_MAP = {
   "Module": "Module",
   "module": "Module",
   "category": "Category",
+  "Organization": "Organization",
   "organization": "Organization",
   "Receipt Amount": "Net Amt",
   "receiptamt": "Net Amt",
@@ -84,7 +84,7 @@ const modalStyle = {
   overflow: "hidden",
 };
 
-const OutstandingDetailsModal = ({ open, onClose, data, loading, paymentMode }) => {
+const PaymentDetailsModal = ({ open, onClose, data, loading, paymentMode }) => {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -104,20 +104,15 @@ const OutstandingDetailsModal = ({ open, onClose, data, loading, paymentMode }) 
   }, []);
 
   const columns = useMemo(() => {
-    return [
-      { id: "date", label: "Bill Date" },
-      { id: "organization", label: "Organization" },
-      { id: "uhid", label: "UHID No" },
-      { id: "reg no", label: "Registration No" },
-
-      { id: "billno", label: "Bill No" },
-      { id: "patientname", label: "Patient Name" },
-      { id: "consultantname", label: "Consultant" },
-      { id: "module", label: "Module" },
-      { id: "billamount", label: "Bill Amt" },
-      { id: "speciality", label: "Speciality" },
-    ];
-  }, []);
+    if (!data || data.length === 0) return [];
+    const firstRow = data[0];
+    return Object.keys(firstRow)
+      .filter(key => !IGNORE_KEYS.includes(key.toLowerCase()))
+      .map(key => ({
+        id: key,
+        label: LABEL_MAP[key] || (key.charAt(0).toUpperCase() + key.slice(1))
+      }));
+  }, [data]);
 
   const filteredData = useMemo(() => {
     if (!data || data.length === 0) return [];
@@ -133,24 +128,17 @@ const OutstandingDetailsModal = ({ open, onClose, data, loading, paymentMode }) 
   const totals = useMemo(() => {
     if (!data || data.length === 0) return { collection: 0, refund: 0, netAmt: 0 };
     return data.reduce((acc, row) => {
-      const bal = Number(row["balance"] || row["Outstanding"] || row["outstanding"] || 0);
-      const org = (row["organization"] || row["Organization"] || "").trim();
-
-      acc.collection += bal; // Total Outstanding (stored in collection for UI map)
-
-      if (org.toLowerCase() === "cash patient") {
-        acc.refund += bal; // Cash Patient Outstanding (stored in refund for UI map)
-      } else {
-        acc.netAmt += bal; // Organization Outstanding (stored in netAmt for UI map)
-      }
+      acc.collection += Number(row["collection"] || row["Collection"] || 0); // Gross Collection
+      acc.refund += Number(row["refund"] || row["Refund"] || 0); // Refund
+      acc.netAmt += Number(row["Receipt Amount"] || row["receiptamt"] || 0); // Net Collection
       return acc;
     }, { collection: 0, refund: 0, netAmt: 0 });
   }, [data]);
 
   const summaryLabels = {
-    gross: "Total Outstanding",
-    deduction: "Cash Patient Outstanding",
-    net: "Organization Outstanding"
+    gross: "Gross Collection",
+    deduction: "Refund",
+    net: "Net Collection"
   };
 
   const paginatedData = useMemo(() => {
@@ -158,23 +146,9 @@ const OutstandingDetailsModal = ({ open, onClose, data, loading, paymentMode }) 
     return filteredData.slice(start, start + rowsPerPage);
   }, [filteredData, page, rowsPerPage]);
 
-  const handleExportCSV = useCallback(() => {
-    if (!filteredData.length) return;
-    const headers = columns.map((c) => c.label).join(",");
-    const rows = filteredData.map((row) =>
-      columns.map((c) => `"${String(row[c.id] ?? "").replace(/"/g, '""')}"`).join(",")
-    );
-    const csvContent = [headers, ...rows].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `payment_${paymentMode}_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  }, [filteredData, paymentMode]);
+  const handleExportXLSX = useCallback(() => {
+    exportToExcel(filteredData, columns, "Collection Details", `payment_${paymentMode}`);
+  }, [filteredData, columns, paymentMode]);
 
   const handleClose = useCallback(() => {
     setSearch("");
@@ -216,7 +190,7 @@ const OutstandingDetailsModal = ({ open, onClose, data, loading, paymentMode }) 
             </Box>
             <Box>
               <Typography variant="h5" sx={{ color: "#0f172a", fontWeight: 800, letterSpacing: "-0.5px", lineHeight: 1.2 }}>
-                Outstanding Details
+                Collection/Refund Details
               </Typography>
               {paymentMode && (
                 <Chip
@@ -335,7 +309,7 @@ const OutstandingDetailsModal = ({ open, onClose, data, loading, paymentMode }) 
             variant="contained"
             size="small"
             startIcon={<DownloadIcon />}
-            onClick={handleExportCSV}
+            onClick={handleExportXLSX}
             disabled={!filteredData.length || loading}
             sx={{
               display: { xs: "none", sm: "flex" },
@@ -346,11 +320,11 @@ const OutstandingDetailsModal = ({ open, onClose, data, loading, paymentMode }) 
               px: 2.5,
             }}
           >
-            Export CSV
+            Export Excel
           </Button>
 
           <IconButton
-            onClick={handleExportCSV}
+            onClick={handleExportXLSX}
             disabled={!filteredData.length || loading}
             sx={{
               display: { xs: "flex", sm: "none" },
@@ -494,4 +468,4 @@ const OutstandingDetailsModal = ({ open, onClose, data, loading, paymentMode }) 
   );
 };
 
-export default React.memo(OutstandingDetailsModal);
+export default React.memo(PaymentDetailsModal);

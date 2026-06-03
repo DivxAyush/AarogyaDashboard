@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
  Box,
  Typography,
@@ -26,17 +27,18 @@ import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import EventNoteIcon from "@mui/icons-material/EventNote";
 import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
-import DashboardLayout from "../layouts/DashboardLayout";
-import PaymentChart from "../components/PaymentChart";
-import PaymentDetailsModal from "../components/PaymentDetailsModal";
-import RevenueDetailsModal from "../components/RevenueDetailsModal";
-import OutstandingDetailsModal from "../components/OutstandingDetailsModal";
-import DashboardFilterBar from "../components/DashboardFilterBar";
-import OPDDashboard from "./dashboards/OPDDashboard";
-import IPDDashboard from "./dashboards/IPDDashboard";
-import PharmacyDashboard from "./dashboards/PharmacyDashboard";
-import { getChartData, getDatasetData, getAllCollectionData, getAllRevenueData, getAllOutstandingData } from "../api/api_fun";
-import { SUPERSET_CHART_ID } from "../utils/constants";
+import DashboardLayout from "../../../layouts/DashboardLayout";
+import PaymentChart from "../../../components/PaymentChart";
+import PaymentDetailsModal from "./Detail/PaymentDetailsModal";
+import RevenueDetailsModal from "./Detail/RevenueDetailsModal";
+import OutstandingDetailsModal from "./Detail/OutstandingDetailsModal";
+import DashboardFilterBar from "../../../layouts/DashboardFilterBar";
+import OPDDashboard from "../OPDDashboard/OPDDashboard";
+import IPDDashboard from "../IPDDashboard/IPDDashboard";
+import PharmacyDashboard from "../PharmacyDashboard/PharmacyDashboard";
+import { getChartData, getDatasetData, getAllCollectionData, getAllRevenueData, getAllOutstandingData } from "../../../api/api_fun";
+import { SUPERSET_CHART_ID, ROUTES } from "../../../utils/constants";
+import CardSkeletonLoading from "../../../components/LoadingStyles/CardSkeletonLoading";
 
 // ─── Shared card dimensions ───────────────────────────────────────────────────
 const CARD_MIN_HEIGHT = 210; // px — ALL 4 cards must match this
@@ -61,67 +63,13 @@ const MiniSparkline = ({ color = "#3b82f6" }) => {
  );
 };
 
-// ─── Skeleton summary card — exact same shell as the real card ────────────────
-const SkeletonSummaryCard = () => (
- <Box
-  sx={{
-   borderRadius: CARD_RADIUS,
-   background: "rgba(255,255,255,0.92)",
-   backdropFilter: "blur(12px)",
-   border: "1px solid rgba(255,255,255,0.7)",
-   boxShadow: CARD_SHADOW,
-   minHeight: CARD_MIN_HEIGHT,
-   height: "100%",
-   display: "flex",
-   flexDirection: "column",
-   overflow: "hidden",
-  }}
- >
-  {/* top content area */}
-  <Box sx={{ p: "20px 20px 0 20px", flexGrow: 1, display: "flex", flexDirection: "column" }}>
-   {/* icon + kebab row */}
-   <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", mb: 1.5 }}>
-    <Skeleton variant="rounded" width={44} height={44} sx={{ borderRadius: "14px" }} />
-    <Skeleton variant="circular" width={28} height={28} />
-   </Box>
-   {/* title */}
-   <Skeleton variant="text" width="55%" height={14} sx={{ mb: 0.8 }} />
-   {/* value */}
-   <Skeleton variant="text" width="90%" height={36} sx={{ mb: 0.4 }} />
-   {/* subtitle */}
-   <Skeleton variant="text" width="65%" height={13} sx={{ mb: 1 }} />
-  </Box>
-  {/* sparkline area — fixed height, pinned to bottom */}
-  <Box sx={{ px: "20px", pb: "12px", flexShrink: 0 }}>
-   <Skeleton variant="rounded" width="100%" height={32} sx={{ borderRadius: "6px" }} />
-  </Box>
- </Box>
-);
 
-// ─── Skeleton Aarogya promo card — same shell as the real promo card ──────────
-const SkeletonPromoCard = () => (
- <Box
-  sx={{
-   borderRadius: CARD_RADIUS,
-   background: "linear-gradient(135deg, #c7d8f8 0%, #dbeafe 100%)",
-   minHeight: CARD_MIN_HEIGHT,
-   height: "100%",
-   display: "flex",
-   flexDirection: "column",
-   justifyContent: "flex-end",
-   p: "20px",
-   overflow: "hidden",
-  }}
- >
-  <Skeleton variant="text" width="60%" height={22} sx={{ mb: 1, bgcolor: "rgba(255,255,255,0.5)" }} />
-  <Skeleton variant="text" width="80%" height={16} sx={{ bgcolor: "rgba(255,255,255,0.4)" }} />
- </Box>
-);
 
 const STAT_CONFIG = [
  {
   key: "netCollection",
   title: "Net Collection",
+  section: "collection",
   icon: <AttachMoneyIcon sx={{ fontSize: 24, color: "#2563eb" }} />,
   color: "#2563eb",
   subtitle: "Total net amount",
@@ -131,6 +79,7 @@ const STAT_CONFIG = [
  {
   key: "grossCollection",
   title: "Gross Collection",
+  section: "collection",
   icon: <ReceiptLongIcon sx={{ fontSize: 24, color: "#6366f1" }} />,
   color: "#6366f1",
   subtitle: "Total gross amount",
@@ -140,6 +89,7 @@ const STAT_CONFIG = [
  {
   key: "refund",
   title: "Refund",
+  section: "collection",
   icon: <RefundIcon sx={{ fontSize: 24, color: "#0ea5e9" }} />,
   color: "#0ea5e9",
   subtitle: "Total refunds",
@@ -149,6 +99,7 @@ const STAT_CONFIG = [
  {
   key: "revenue",
   title: "Net Revenue",
+  section: "revenue",
   icon: <QueryStatsIcon sx={{ fontSize: 24, color: "#10b981" }} />,
   color: "#10b981",
   subtitle: "Total revenue",
@@ -158,6 +109,7 @@ const STAT_CONFIG = [
  {
   key: "grossRevenue",
   title: "Gross Revenue",
+  section: "revenue",
   icon: <AttachMoneyIcon sx={{ fontSize: 24, color: "#f59e0b" }} />,
   color: "#f59e0b",
   subtitle: "Total gross revenue",
@@ -167,6 +119,7 @@ const STAT_CONFIG = [
  {
   key: "discount",
   title: "Discount",
+  section: "revenue",
   icon: <AttachMoneyIcon sx={{ fontSize: 24, color: "#ef4444" }} />,
   color: "#ef4444",
   subtitle: "Total discount",
@@ -176,6 +129,7 @@ const STAT_CONFIG = [
  {
   key: "outstanding",
   title: "Total Outstanding",
+  section: "outstanding",
   icon: <AttachMoneyIcon sx={{ fontSize: 24, color: "#eab308" }} />,
   color: "#eab308",
   subtitle: "Total outstanding amount",
@@ -185,6 +139,7 @@ const STAT_CONFIG = [
  {
   key: "cashPatientOutstanding",
   title: "Cash Patient Outstanding",
+  section: "outstanding",
   icon: <AttachMoneyIcon sx={{ fontSize: 24, color: "#f97316" }} />,
   color: "#f97316",
   subtitle: "Outstanding for Cash Patients",
@@ -194,6 +149,7 @@ const STAT_CONFIG = [
  {
   key: "orgOutstanding",
   title: "Organization Outstanding",
+  section: "outstanding",
   icon: <AttachMoneyIcon sx={{ fontSize: 24, color: "#8b5cf6" }} />,
   color: "#8b5cf6",
   subtitle: "Outstanding for Organizations",
@@ -202,37 +158,6 @@ const STAT_CONFIG = [
  },
 ];
 
-// ─── Recent Activity Data ───
-const RECENT_ACTIVITIES = [
- {
-  icon: <PaymentIcon sx={{ fontSize: 18 }} />,
-  iconBg: "#dbeafe",
-  iconColor: "#2563eb",
-  text: "Payment collection of ₹2.45 L received",
-  time: "10:30 AM",
- },
- {
-  icon: <PersonAddIcon sx={{ fontSize: 18 }} />,
-  iconBg: "#dcfce7",
-  iconColor: "#16a34a",
-  text: "New patient registered",
-  time: "09:45 AM",
- },
- {
-  icon: <EventNoteIcon sx={{ fontSize: 18 }} />,
-  iconBg: "#fef3c7",
-  iconColor: "#d97706",
-  text: "Appointment scheduled",
-  time: "09:30 AM",
- },
- {
-  icon: <CurrencyRupeeIcon sx={{ fontSize: 18 }} />,
-  iconBg: "#fce7f3",
-  iconColor: "#db2777",
-  text: "Refund of ₹15,000 processed",
-  time: "09:15 AM",
- },
-];
 
 // ─── Bottom Features ───
 const FEATURES = [
@@ -266,16 +191,10 @@ const FEATURES = [
  },
 ];
 
-// ─── Get greeting based on time ───
-function getGreeting() {
- const h = new Date().getHours();
- if (h < 12) return "Good Morning";
- if (h < 17) return "Good Afternoon";
- return "Good Evening";
-}
 
 /* ═══════════════════════ DASHBOARD COMPONENT ═══════════════════════ */
 const Dashboard = () => {
+ const navigate = useNavigate();
  const [activeTab, setActiveTab] = useState("Home Dashboard");
  const [chartData, setChartData] = useState([]);
  const [statsLoading, setStatsLoading] = useState(true);
@@ -288,9 +207,7 @@ const Dashboard = () => {
  const [drillData, setDrillData] = useState([]);
  const [drillLoading, setDrillLoading] = useState(false);
 
- // Payment Mode global data state
- const [paymentModeData, setPaymentModeData] = useState([]);
- const [paymentModeLoading, setPaymentModeLoading] = useState(true);
+
 
  // All collection data state
  const [allCollectionData, setAllCollectionData] = useState([]);
@@ -394,7 +311,7 @@ const Dashboard = () => {
 
 
 
- // Card click karne pe ye function chalega
+ // 3-dot modal handler
  const handleCardClick = useCallback(async (stat) => {
   setModalTitle(stat.title);
   setModalKey(stat.key);
@@ -484,45 +401,8 @@ const Dashboard = () => {
   return { netCollection, grossCollection, refund, revenue, grossRevenue, discount, outstanding, cashPatientOutstanding, orgOutstanding };
  }, [allCollectionData, allRevenueData, allOutstandingData]);
 
- const currentDate = useMemo(
-  () =>
-   new Date().toLocaleDateString("en-IN", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-   }),
-  []
- );
 
- const user = useMemo(() => {
-  try {
-   return JSON.parse(localStorage.getItem("aarogya_user")) || {};
-  } catch {
-   return {};
-  }
- }, []);
 
- // statsLoading → skeleton row using the same flex container as real cards
- const renderSkeletonCards = () => (
-  <Box
-   sx={{
-    display: "flex",
-    flexDirection: { xs: "column", sm: "row" },
-    flexWrap: "wrap",
-    gap: 2,
-    mb: 2,
-    width: "100%",
-    alignItems: "stretch",
-   }}
-  >
-   {[...Array(9)].map((_, i) => (
-    <Box key={i} sx={{ flex: { xs: "1 1 100%", sm: "1 1 calc(50% - 16px)", md: "1 1 calc(33.333% - 16px)" }, minWidth: 0 }}>
-     <SkeletonPromoCard />
-    </Box>
-   ))}
-  </Box>
- );
 
  return (
   <DashboardLayout>
@@ -546,7 +426,7 @@ const Dashboard = () => {
      )}
 
      {/* ═══════ KPI Cards Row — Flex (pixel-perfect equal width, Grahaak style) ═══════ */}
-     {statsLoading ? renderSkeletonCards() : (
+     {statsLoading ? <CardSkeletonLoading count={9} columns={3} /> : (
       <Box
        sx={{
         display: "flex",
@@ -569,10 +449,10 @@ const Dashboard = () => {
         else if (str.length > 10) valueFontSize = { xs: "1.45rem", md: "1.6rem" };
 
         return (
-         /* flex: 1 1 calc(33.333% - 16px) makes it wrap neatly for 6 cards */
+         /* flex: 1 1 calc(33.333% - 16px) makes it wrap neatly for 3 columns */
          <Box key={stat.key} sx={{ flex: { xs: "1 1 100%", sm: "1 1 calc(50% - 16px)", md: "1 1 calc(33.333% - 16px)" }, minWidth: 0 }}>
           <Card
-           onClick={() => handleCardClick(stat)}
+           onClick={() => navigate(ROUTES.GRAPH_DETAIL, { state: { section: stat.section, cardTitle: `${stat.title} Analytics` } })}
            sx={{
             borderRadius: CARD_RADIUS,
             minHeight: CARD_MIN_HEIGHT,
@@ -616,7 +496,9 @@ const Dashboard = () => {
              >
               {stat.icon}
              </Box>
-             <IconButton size="small" sx={{ color: "#94a3b8", mt: -0.5, mr: -0.5 }}>
+             <IconButton size="small" sx={{ color: "#94a3b8", mt: -0.5, mr: -0.5 }}
+              onClick={(e) => { e.stopPropagation(); handleCardClick(stat); }}
+             >
               <MoreVertIcon sx={{ fontSize: 18 }} />
              </IconButton>
             </Box>
@@ -662,10 +544,7 @@ const Dashboard = () => {
       </Box>
      )}
 
-     {/* ═══════ Analytics Section ═══════ */}
-     {/* <Box sx={{ mb: 2, width: "100%", boxSizing: "border-box" }}>
-      <PaymentChart />
-     </Box> */}
+
 
      {/* ═══════ Bottom Features Strip — Static 4 Equal Cards ═══════ */}
      <Box sx={{ display: "flex", gap: 1.5, width: "100%", flexWrap: { xs: "wrap", sm: "nowrap" }, boxSizing: "border-box" }}>

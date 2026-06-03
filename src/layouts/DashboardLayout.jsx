@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Toolbar } from "@mui/material";
-import Navbar from "../components/Navbar";
+import Navbar from "./Navbar";
 
 const DashboardLayout = ({ children }) => {
  return (

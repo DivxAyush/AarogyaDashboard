@@ -7,7 +7,8 @@ import { ROUTES, STORAGE_KEYS } from "./utils/constants";
 
 // Import pages directly (removed lazy loading for simplicity)
 import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
+import Dashboard from "./pages/Dashboard/HomeDashboard/Dashboard";
+import GraphDetailPage from "./pages/Dashboard/HomeDashboard/GraphDetail/GraphDetailPage";
 import Analytics from "./pages/Analytics";
 import Reports from "./pages/Reports";
 
@@ -149,6 +150,7 @@ const App = () => {
 
           {/* Protected Routes */}
           <Route path={ROUTES.DASHBOARD} element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path={ROUTES.GRAPH_DETAIL} element={<ProtectedRoute><GraphDetailPage /></ProtectedRoute>} />
           <Route path={ROUTES.ANALYTICS} element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
           <Route path={ROUTES.REPORTS} element={<ProtectedRoute><Reports /></ProtectedRoute>} />
 

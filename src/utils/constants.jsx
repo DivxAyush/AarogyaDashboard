@@ -9,6 +9,7 @@ export const APP_VERSION = "1.0.0";
 export const ROUTES = {
   LOGIN: "/login",
   DASHBOARD: "/",
+  GRAPH_DETAIL: "/graph-detail",
   ANALYTICS: "/analytics",
   REPORTS: "/reports",
 };

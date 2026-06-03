@@ -118,14 +118,16 @@ const DateFilterButton = ({ value, onChange }) => {
         onClose={handleClose}
         anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
         transformOrigin={{ vertical: "top", horizontal: "left" }}
-        PaperProps={{
-          sx: {
-            mt: 1,
-            borderRadius: "14px",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-            border: "1px solid #e2e8f0",
-            width: 300,
-            overflow: "hidden",
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 1,
+              borderRadius: "14px",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+              border: "1px solid #e2e8f0",
+              width: 300,
+              overflow: "hidden",
+            },
           },
         }}
       >
@@ -173,8 +175,7 @@ const DateFilterButton = ({ value, onChange }) => {
                 size="small"
                 value={customFrom}
                 onChange={(e) => setCustomFrom(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                inputProps={{ max: customTo }}
+                slotProps={{ inputLabel: { shrink: true }, htmlInput: { max: customTo } }}
                 fullWidth
                 sx={{ "& .MuiOutlinedInput-root": { borderRadius: "8px" } }}
               />
@@ -184,8 +185,7 @@ const DateFilterButton = ({ value, onChange }) => {
                 size="small"
                 value={customTo}
                 onChange={(e) => setCustomTo(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                inputProps={{ min: customFrom }}
+                slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: customFrom } }}
                 fullWidth
                 sx={{ "& .MuiOutlinedInput-root": { borderRadius: "8px" } }}
               />
@@ -413,7 +413,7 @@ const DashboardFilterBar = ({ filters, onChange, activeTab, onTabChange, siteCod
         onClose={() => setMobileModalOpen(false)}
         fullWidth
         maxWidth="xs"
-        PaperProps={{ sx: { borderRadius: "16px" } }}
+        slotProps={{ paper: { sx: { borderRadius: "16px" } } }}
       >
         <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontWeight: 800, color: "#0f172a" }}>
           Filters

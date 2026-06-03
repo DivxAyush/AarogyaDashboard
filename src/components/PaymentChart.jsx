@@ -12,7 +12,7 @@ import {
 import BarChartIcon from "@mui/icons-material/BarChart";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { getChartData, getDatasetData } from "../api/api_fun";
-import PaymentDetailsModal from "./PaymentDetailsModal";
+import PaymentDetailsModal from "../pages/Dashboard/HomeDashboard/Detail/PaymentDetailsModal";
 import { SUPERSET_CHART_ID } from "../utils/constants";
 import { BarChart } from "@mui/x-charts/BarChart";
 import { axisClasses } from "@mui/x-charts/ChartsAxis";
