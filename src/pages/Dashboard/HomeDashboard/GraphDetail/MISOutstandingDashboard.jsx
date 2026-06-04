@@ -1,8 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Box, Typography, Paper, Skeleton, IconButton, Tooltip as MuiTooltip, Chip, Modal, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
 import { BarChart } from "@mui/x-charts/BarChart";
-import { PieChart } from "@mui/x-charts/PieChart";
-import { useDrawingArea } from "@mui/x-charts/hooks";
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 import FilterAltOffIcon from "@mui/icons-material/FilterAltOff";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import CloseIcon from "@mui/icons-material/Close";
@@ -49,14 +48,85 @@ const CARD_STYLE = {
  p: 2,
 };
 
-function PieCenterLabel({ children }) {
- const { width, height, left, top } = useDrawingArea();
- return (
-  <text x={left + width / 2} y={top + height / 2} textAnchor="middle" dominantBaseline="central" style={{ fill: "#0f172a", fontSize: "0.85rem", fontWeight: 800 }}>
-   {children}
-  </text>
- );
-}
+const PIE_COLORS = ["#3b82f6", "#ef4444", "#22c55e", "#f59e0b", "#8b5cf6", "#06b6d4", "#f97316", "#ec4899", "#14b8a6", "#6366f1"];
+
+const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+        return (
+            <Box sx={{ bgcolor: '#fff', p: 1, border: '1px solid #e2e8f0', borderRadius: '6px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                {label && <Typography sx={{ fontWeight: 700, fontSize: '11px', color: '#1e293b', mb: 0.5 }}>{label}</Typography>}
+                {payload.map((entry, index) => (
+                    <Box key={`item-${index}`} sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, mb: 0.25 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: entry.color }} />
+                            <Typography sx={{ fontSize: '10px', color: '#475569', fontWeight: 500 }}>{entry.name}</Typography>
+                        </Box>
+                        <Typography sx={{ fontSize: '10px', fontWeight: 700, color: '#0f172a' }}>{formatFullINR(entry.value)}</Typography>
+                    </Box>
+                ))}
+            </Box>
+        );
+    }
+    return null;
+};
+
+const DashboardSkeleton = () => {
+    const glassCard = {
+        ...CARD_STYLE,
+        background: 'linear-gradient(135deg, rgba(255,255,255,0.8), rgba(255,255,255,0.5))',
+        backdropFilter: 'blur(12px)',
+        border: '1px solid rgba(255,255,255,0.8)',
+    };
+    
+    const mockBarData = [
+        [60, 20], [45, 15], [80, 25], [35, 10], [50, 15]
+    ];
+
+    return (
+        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(3, 1fr)" }, gap: 3, mt: 2 }}>
+            <Paper elevation={0} sx={glassCard}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                    <Skeleton animation="wave" variant="text" width={150} height={24} />
+                    <Skeleton animation="wave" variant="rounded" width={70} height={26} sx={{ borderRadius: '6px' }} />
+                </Box>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center', justifyContent: 'center', flex: 1, mt: 2, gap: 3 }}>
+                    <Skeleton animation="wave" variant="circular" width={200} height={200} />
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, minWidth: 120 }}>
+                        {[1, 2, 3, 4, 5].map(i => (
+                            <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Skeleton animation="wave" variant="circular" width={10} height={10} />
+                                <Skeleton animation="wave" variant="text" width={80} height={16} />
+                            </Box>
+                        ))}
+                    </Box>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, pt: 3, borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+                    <Skeleton animation="wave" variant="text" width={200} height={24} />
+                </Box>
+            </Paper>
+
+            {[1, 2, 3, 4, 5].map(i => (
+                <Paper key={i} elevation={0} sx={glassCard}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                        <Skeleton animation="wave" variant="text" width={180} height={24} />
+                        <Skeleton animation="wave" variant="rounded" width={70} height={26} sx={{ borderRadius: '6px' }} />
+                    </Box>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 4 }}>
+                        {mockBarData.map((widths, j) => (
+                            <Box key={j} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <Skeleton animation="wave" variant="text" width={40} height={16} />
+                                <Box sx={{ flex: 1, display: 'flex', gap: 1 }}>
+                                    <Skeleton animation="wave" variant="rounded" width={`${widths[0]}%`} height={12} sx={{ borderRadius: 1 }} />
+                                    <Skeleton animation="wave" variant="rounded" width={`${widths[1]}%`} height={12} sx={{ borderRadius: 1 }} />
+                                </Box>
+                            </Box>
+                        ))}
+                    </Box>
+                </Paper>
+            ))}
+        </Box>
+    );
+};
 
 const AggregatedDataModal = ({ open, onClose, title, dataset }) => {
  return (
@@ -189,11 +259,7 @@ const MISOutstandingDashboard = ({ allOutstandingData, loading }) => {
  }, [allOutstandingData, chartFilters]);
 
  if (loading) {
-  return (
-   <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2, mt: 2 }}>
-    {[1, 2, 3, 4].map(i => <Skeleton key={i} variant="rounded" width="100%" height={280} sx={{ borderRadius: "12px" }} />)}
-   </Box>
-  );
+  return <DashboardSkeleton />;
  }
 
  const colors = {
@@ -215,21 +281,21 @@ const MISOutstandingDashboard = ({ allOutstandingData, loading }) => {
    balanceLog: Math.max(0, d.balance > 0 ? Math.log10(d.balance) : 0)
   }));
 
-  const leftMargin = 90;
+  const leftMargin = 5;
 
   return (
    <Paper elevation={0} sx={{ ...CARD_STYLE, display: "flex", flexDirection: "column" }}>
-    <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", mb: 1 }}>
-     <Box>
+    <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", mb: 1, flexWrap: "wrap", gap: 1 }}>
+     <Box sx={{ flex: 1, minWidth: "120px" }}>
       <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#1e293b" }}>{title}</Typography>
       {fullDataset && fullDataset.length > dataset.length && (
        <Typography sx={{ fontSize: "0.65rem", color: "#64748b", fontWeight: 600 }}>Showing Top 10 entries</Typography>
       )}
      </Box>
-     <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+     <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexShrink: 0 }}>
       {currentFilter && (
        <>
-        <Chip label={`Filtered: ${currentFilter.name}`} size="small" sx={{ fontSize: "0.6rem", height: 20, bgcolor: "#e0f2fe", color: "#0284c7", fontWeight: 700 }} />
+        <Chip label={`Filtered: ${currentFilter.name}`} size="small" sx={{ fontSize: "0.6rem", height: 20, bgcolor: "#e0f2fe", color: "#0284c7", fontWeight: 700, maxWidth: { xs: 120, sm: 200 } }} />
         <MuiTooltip title="Clear Filter">
          <IconButton size="small" onClick={() => setChartFilters(prev => ({ ...prev, [filterKey]: null }))} sx={{ p: 0.5, bgcolor: "#fee2e2", color: "#ef4444", "&:hover": { bgcolor: "#fecaca" } }}>
           <FilterAltOffIcon sx={{ fontSize: 14 }} />
@@ -257,9 +323,12 @@ const MISOutstandingDashboard = ({ allOutstandingData, loading }) => {
        layout="horizontal"
        yAxis={[{
         scaleType: "band",
+        categoryGapRatio: 0.2,
         dataKey: "name",
-        tickLabelStyle: { fontSize: 11, fontWeight: 600, fill: "#334155" },
-        valueFormatter: (v) => truncate(v, 14)
+        tickLabelStyle: { fontSize: 10, fontWeight: 600, fill: "#475569" },
+        valueFormatter: (v) => truncate(v, 14),
+        disableLine: true,
+        disableTicks: true
        }]}
        xAxis={[{
         scaleType: "linear",
@@ -267,22 +336,50 @@ const MISOutstandingDashboard = ({ allOutstandingData, loading }) => {
         valueFormatter: (v) => {
          if (v === 0) return '0';
          if (!Number.isInteger(v)) return '';
-         return Math.round(Math.pow(10, v)).toLocaleString("en-IN");
+         if (v >= 10000000) return `${(v / 10000000).toFixed(1)}Cr`;
+         return `${(v / 100000).toFixed(1)}L`;
         },
-        tickLabelStyle: { fontSize: 10 }
+        tickLabelStyle: { fontSize: 10, fill: '#64748b', fontWeight: 600 },
+        disableLine: false,
+        disableTicks: true
        }]}
        series={[
         {
-         dataKey: "balanceLog",
+         dataKey: "balance",
          label: "Outstanding",
          color: colors.balance,
-         valueFormatter: (v, ctx) => {
-          const d = chartData[ctx?.dataIndex];
-          return formatFullINR(d?.balance || 0);
+         valueFormatter: (v) => formatFullINR(v),
+         barLabelPlacement: "outside",
+         barLabel: (item) => {
+             let val = item?.value ?? item;
+             if (!val || val === 0) return '';
+             if (val >= 10000000) return `${(val / 10000000).toFixed(2)}Cr`;
+             if (val >= 100000) return `${(val / 100000).toFixed(2)}L`;
+             if (val >= 1000) return `${(val / 1000).toFixed(1)}K`;
+             return val.toString();
          }
         },
        ]}
-       margin={{ left: leftMargin, right: 20, top: 40, bottom: 20 }}
+       slotProps={{
+           legend: {
+               direction: 'row',
+               position: { vertical: 'top', horizontal: 'middle' },
+               itemMarkWidth: 10,
+               itemMarkHeight: 10,
+               labelStyle: { fontSize: 11, fontWeight: 600, fill: '#475569' }
+           },
+           popper: {
+               sx: {
+                   "& .MuiChartsTooltip-root": { p: 0.5, borderRadius: '6px' },
+                   "& .MuiChartsTooltip-table": { '& td, & th': { p: '2px 6px !important', fontSize: '10px !important' } },
+                   "& .MuiTypography-root": { fontSize: '10px !important', fontWeight: 'bold' },
+                   "& .MuiChartsTooltip-mark": { width: '8px !important', height: '8px !important' }
+               }
+           },
+           bar: { rx: 4, ry: 4 },
+           barLabel: { style: { fontSize: '8px', fill: '#64748b', fontWeight: 600 } }
+       }}
+       margin={{ top: 40, right: 30, left: 5, bottom: 25 }}
        sx={{
         ...chartSx,
         "& .MuiBarElement-root": { rx: 4 },
@@ -306,17 +403,25 @@ const MISOutstandingDashboard = ({ allOutstandingData, loading }) => {
 
  return (
   <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
-
+    <style>{`
+        .MuiChartsTooltip-root { padding: 4px 8px !important; border-radius: 6px !important; }
+        .MuiChartsTooltip-table { margin: 0 !important; }
+        .MuiChartsTooltip-cell { padding: 2px 4px !important; }
+        .MuiChartsTooltip-labelCell, .MuiChartsTooltip-valueCell { font-size: 10px !important; font-weight: 600 !important; }
+        .MuiChartsTooltip-mark { width: 6px !important; height: 6px !important; border-radius: 50% !important; box-shadow: none !important; margin-right: 4px !important; }
+        .MuiBarLabel-root { font-size: 4.5px !important; font-weight: 600 !important; fill: #64748b !important; }
+        .recharts-wrapper, .recharts-surface, .recharts-pie-sector, path, svg { outline: none !important; -webkit-tap-highlight-color: transparent !important; }
+    `}</style>
    {/* TOP ROW: Pie (Module) + Bar (Speciality) */}
    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1.5fr" }, gap: 2 }}>
 
     <Paper elevation={0} sx={{ ...CARD_STYLE, display: "flex", flexDirection: "column" }}>
-     <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
-      <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#1e293b" }}>Outstanding by Module</Typography>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+     <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", mb: 1, flexWrap: "wrap", gap: 1 }}>
+      <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#1e293b", flex: 1, minWidth: "120px" }}>Outstanding by Module</Typography>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexShrink: 0 }}>
        {chartFilters.module && (
         <>
-         <Chip label={`Filtered: ${chartFilters.module.name}`} size="small" sx={{ fontSize: "0.6rem", height: 20, bgcolor: "#e0f2fe", color: "#0284c7", fontWeight: 700 }} />
+         <Chip label={`Filtered: ${chartFilters.module.name}`} size="small" sx={{ fontSize: "0.6rem", height: 20, bgcolor: "#e0f2fe", color: "#0284c7", fontWeight: 700, maxWidth: { xs: 120, sm: 200 } }} />
          <MuiTooltip title="Clear Filter">
           <IconButton size="small" onClick={() => setChartFilters(prev => ({ ...prev, module: null }))} sx={{ p: 0.5, bgcolor: "#fee2e2", color: "#ef4444", "&:hover": { bgcolor: "#fecaca" } }}>
            <FilterAltOffIcon sx={{ fontSize: 14 }} />
@@ -337,36 +442,51 @@ const MISOutstandingDashboard = ({ allOutstandingData, loading }) => {
        </MuiTooltip>
       </Box>
      </Box>
-     <Box sx={{ flex: 1, minHeight: 420 }}>
-      {modules.length > 0 ? (
-       <PieChart
-        series={[{
-         data: modules,
-         innerRadius: 75,
-         outerRadius: 110,
-         paddingAngle: 2,
-         cornerRadius: 4,
-         valueFormatter: (v) => {
-          return `Outstanding: ${formatINR(v.balance)}`;
-         }
-        }]}
-        margin={{ top: 40, bottom: 60, left: 10, right: 10 }}
-        slotProps={{
-         legend: { direction: 'row', position: { vertical: 'bottom', horizontal: 'middle' }, padding: 0 }
-        }}
-        sx={chartSx}
-        onItemClick={(event, item) => {
-         const clickedModule = modules[item.dataIndex];
-         setChartFilters(prev => ({ ...prev, module: prev.module?.name === clickedModule.label ? null : { name: clickedModule.label, originalNames: clickedModule.originalNames } }));
-        }}
-       >
-        <PieCenterLabel>{formatFullINR(totalBalance)}</PieCenterLabel>
-       </PieChart>
-      ) : (
-       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#94a3b8" }}>
-        No data available
+     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center', justifyContent: 'center', flex: 1, mt: 2, gap: { xs: 3, sm: 0 } }}>
+           <Box sx={{ position: 'relative', width: 200, height: 200 }}>
+               {modules.length > 0 ? (
+                   <PieChart width={200} height={200}>
+                       <Pie data={modules} dataKey="value" nameKey="label" cx="50%" cy="50%" innerRadius={65} outerRadius={95} stroke="none" paddingAngle={2} cursor="pointer" onClick={(data) => {
+                           setChartFilters(prev => ({ ...prev, module: prev.module?.name === data.label ? null : { name: data.label, originalNames: data.originalNames } }));
+                       }}>
+                           {modules.map((entry, index) => <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />)}
+                       </Pie>
+                       <RechartsTooltip content={<CustomTooltip />} wrapperStyle={{ zIndex: 1000 }} />
+                   </PieChart>
+               ) : (
+                   <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#94a3b8" }}>No data</Box>
+               )}
+               {modules.length > 0 && (
+                   <Box sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                       <Typography sx={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', maxWidth: 110, textAlign: 'center', wordBreak: 'break-word', lineHeight: 1.2 }}>
+                           {formatFullINR(totalBalance)}
+                       </Typography>
+                       <Typography sx={{ fontSize: '11px', color: '#64748b', fontWeight: 500, mt: 0.5 }}>Total Outstanding</Typography>
+                   </Box>
+               )}
+           </Box>
+           {modules.length > 0 && (
+               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, ml: { sm: 4 }, minWidth: 140, width: { xs: '100%', sm: 'auto' } }}>
+                   {modules.map((entry, index) => (
+                       <Box key={`legend-${index}`} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
+                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                               <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: PIE_COLORS[index % PIE_COLORS.length] }} />
+                               <Typography sx={{ fontSize: '12px', color: '#475569', fontWeight: 600 }}>{truncate(entry.label, 14)}</Typography>
+                           </Box>
+                           <Typography sx={{ fontSize: '12px', color: '#334155', fontWeight: 700 }}>{totalBalance > 0 ? ((entry.balance / totalBalance) * 100).toFixed(1) : 0}%</Typography>
+                       </Box>
+                   ))}
+               </Box>
+           )}
        </Box>
-      )}
+       {modules.length > 0 && (
+           <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: { xs: 1, sm: 2 }, mt: 3, pt: 3, borderTop: '1px solid #f1f5f9' }}>
+               <Typography sx={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Top Module</Typography>
+               <Chip label={modules[0].name} sx={{ bgcolor: '#e0f2fe', color: '#0369a1', fontWeight: 700, fontSize: '12px', height: 26, borderRadius: '6px' }} />
+               <Typography sx={{ fontSize: '13px', color: '#0f172a', fontWeight: 800 }}>{formatFullINR(modules[0].balance)}</Typography>
+           </Box>
+       )}
      </Box>
     </Paper>
 

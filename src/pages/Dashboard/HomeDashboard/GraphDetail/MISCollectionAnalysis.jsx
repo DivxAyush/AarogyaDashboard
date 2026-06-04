@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Box, Paper, Typography, IconButton, Tooltip as MuiTooltip, Chip, Modal, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
+import { Box, Paper, Typography, IconButton, Tooltip as MuiTooltip, Chip, Modal, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Skeleton } from "@mui/material";
 import { BarChart, LineChart } from "@mui/x-charts";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import CloseIcon from "@mui/icons-material/Close";
@@ -163,7 +163,7 @@ const MISCollectionAnalysis = ({ allCollectionData, loading }) => {
   }, [allCollectionData]);
 
   if (loading) {
-    return <Box sx={{ p: 4, textAlign: "center" }}>Loading Analysis...</Box>;
+    return <AnalysisSkeleton />;
   }
 
   if (!finYears.length) {
@@ -171,7 +171,7 @@ const MISCollectionAnalysis = ({ allCollectionData, loading }) => {
   }
 
   const getFyLineColor = (index) => {
-    const colors = ["#3b82f6", "#22c55e", "#ef4444", "#eab308", "#8b5cf6"];
+    const colors = ["#3b82f6", "#22c55e", "#ef4444", "#eab308", "#8b5cf6", "#ec4899", "#14b8a6"];
     return colors[index % colors.length];
   };
 
@@ -180,7 +180,7 @@ const MISCollectionAnalysis = ({ allCollectionData, loading }) => {
     label: fy,
     color: getFyLineColor(idx),
     showMark: true,
-    valueFormatter: (v) => formatValue(v),
+    valueFormatter: (v) => formatFullINR(v),
     curve: "catmullRom"
   }));
 
@@ -188,13 +188,36 @@ const MISCollectionAnalysis = ({ allCollectionData, loading }) => {
     dataKey: fy,
     label: fy,
     color: getFyLineColor(idx),
-    valueFormatter: (v) => formatValue(v)
+    valueFormatter: (v) => formatFullINR(v),
+    barLabelPlacement: "outside",
+    barLabel: (item) => {
+        let val = item?.value ?? item;
+        if (!val || val === 0) return '';
+        if (val >= 10000000) return `${(val / 10000000).toFixed(2)}Cr`;
+        if (val >= 100000) return `${(val / 100000).toFixed(2)}L`;
+        if (val >= 1000) return `${(val / 1000).toFixed(1)}K`;
+        return val.toString();
+    }
   }));
 
   const chartSx = {
     "& .MuiChartsAxis-tickLabel": { fill: "#475569", fontSize: "0.75rem", fontWeight: 600 },
     "& .MuiChartsAxis-line": { stroke: "#cbd5e1" },
     "& .MuiChartsAxis-tick": { stroke: "#cbd5e1" },
+  };
+
+  const commonSlotProps = {
+    popper: {
+        sx: {
+            "& .MuiChartsTooltip-root": { p: 0.5, borderRadius: '6px' },
+            "& .MuiChartsTooltip-table": { '& td, & th': { p: '2px 6px !important', fontSize: '10px !important' } },
+            "& .MuiTypography-root": { fontSize: '10px !important', fontWeight: 'bold' },
+            "& .MuiChartsTooltip-mark": { width: '8px !important', height: '8px !important' }
+        }
+    },
+    barLabel: {
+        style: { fontSize: '8px', fill: '#64748b', fontWeight: 600 }
+    }
   };
 
   const renderHeaderOptions = (title, dataset) => (
@@ -215,57 +238,90 @@ const MISCollectionAnalysis = ({ allCollectionData, loading }) => {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
+      <style>{`
+          .MuiChartsTooltip-root { padding: 4px 8px !important; border-radius: 6px !important; }
+          .MuiChartsTooltip-table { margin: 0 !important; }
+          .MuiChartsTooltip-cell { padding: 2px 4px !important; }
+          .MuiChartsTooltip-labelCell, .MuiChartsTooltip-valueCell { font-size: 10px !important; font-weight: 600 !important; }
+          .MuiChartsTooltip-mark { width: 6px !important; height: 6px !important; border-radius: 50% !important; box-shadow: none !important; margin-right: 4px !important; }
+          .MuiBarLabel-root { font-size: 4.5px !important; font-weight: 600 !important; fill: #64748b !important; }
+          .recharts-wrapper, .recharts-surface, .recharts-pie-sector, path, svg { outline: none !important; -webkit-tap-highlight-color: transparent !important; }
+      `}</style>
       {/* Top Row */}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
         
         {/* Financial Year Wise */}
         <Paper elevation={0} sx={CARD_STYLE}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-           <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#1e293b" }}>
+          <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", mb: 2, flexWrap: "wrap", gap: 1 }}>
+           <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#1e293b", flex: 1, minWidth: "120px" }}>
              Financial Year Wise Collection
            </Typography>
-           {renderHeaderOptions("Financial Year Wise Collection", fyData)}
+           <Box sx={{ display: "flex", justifyContent: "flex-end", flexShrink: 0 }}>
+             {renderHeaderOptions("Financial Year Wise Collection", fyData)}
+           </Box>
           </Box>
-          <Box sx={{ flex: 1, minHeight: 250 }}>
+          <Box sx={{ height: 280, width: "100%", mt: 1 }}>
             {fyData.length > 0 ? (
-              <BarChart
-                dataset={fyData}
-                xAxis={[{ scaleType: "band", dataKey: "financialyear" }]}
-                yAxis={[{ valueFormatter: (v) => formatValue(v) }]}
-                series={[{ 
-                  dataKey: "collection", 
-                  color: "#93c5fd", 
-                  valueFormatter: (v) => formatValue(v) 
-                }]}
-                margin={{ left: 60, right: 20, top: 20, bottom: 40 }}
-                sx={chartSx}
-                slotProps={{ legend: { hidden: true } }}
-              />
+                  <BarChart
+                    dataset={fyData}
+                    height={280}
+                    xAxis={[{ 
+                        scaleType: "band", 
+                        dataKey: "financialyear",
+                        tickLabelStyle: { fontSize: 10, fontWeight: 600, fill: "#475569" },
+                    }]}
+                    yAxis={[{ 
+                        scaleType: "linear",
+                        valueFormatter: (v) => formatValue(v),
+                        tickLabelStyle: { fontSize: 10, fontWeight: 600, fill: "#94a3b8" },
+                    }]}
+                    series={[{ 
+                      dataKey: "collection", 
+                      color: "#93c5fd", 
+                      valueFormatter: (v) => formatFullINR(v),
+                      barLabelPlacement: "outside",
+                      barLabel: (item) => {
+                          let val = item?.value ?? item;
+                          if (!val || val === 0) return '';
+                          if (val >= 10000000) return `${(val / 10000000).toFixed(2)}Cr`;
+                          if (val >= 100000) return `${(val / 100000).toFixed(2)}L`;
+                          if (val >= 1000) return `${(val / 1000).toFixed(1)}K`;
+                          return val.toString();
+                      }
+                    }]}
+                    margin={{ left: 60, right: 40, top: 20, bottom: 40 }}
+                    sx={chartSx}
+                    slotProps={{ ...commonSlotProps, legend: { hidden: true } }}
+                  />
             ) : null}
           </Box>
         </Paper>
 
         {/* Quarter Wise */}
         <Paper elevation={0} sx={CARD_STYLE}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-            <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#1e293b" }}>
+          <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", mb: 2, flexWrap: "wrap", gap: 1 }}>
+            <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#1e293b", flex: 1, minWidth: "120px" }}>
               Quarter Wise Collection
             </Typography>
-            {renderHeaderOptions("Quarter Wise Collection", quarterData)}
+            <Box sx={{ display: "flex", justifyContent: "flex-end", flexShrink: 0 }}>
+              {renderHeaderOptions("Quarter Wise Collection", quarterData)}
+            </Box>
           </Box>
-          <Box sx={{ flex: 1, minHeight: 250 }}>
+          <Box sx={{ height: 280, width: "100%", mt: 1 }}>
             {quarterData.length > 0 ? (
-              <LineChart
-                dataset={quarterData}
-                xAxis={[{ scaleType: "point", dataKey: "name" }]}
-                yAxis={[{ valueFormatter: (v) => formatValue(v) }]}
-                series={lineSeries}
-                margin={{ left: 60, right: 20, top: 40, bottom: 40 }}
-                sx={chartSx}
-                slotProps={{
-                  legend: { direction: 'row', position: { vertical: 'top', horizontal: 'right' }, padding: 0 }
-                }}
-              />
+                  <LineChart
+                    dataset={quarterData}
+                    height={280}
+                    xAxis={[{ scaleType: "point", dataKey: "name" }]}
+                    yAxis={[{ valueFormatter: (v) => formatValue(v) }]}
+                    series={lineSeries}
+                    margin={{ left: 60, right: 20, top: 40, bottom: 40 }}
+                    sx={chartSx}
+                    slotProps={{
+                      ...commonSlotProps,
+                      legend: { direction: 'row', position: { vertical: 'top', horizontal: 'right' }, padding: 0 }
+                    }}
+                  />
             ) : null}
           </Box>
         </Paper>
@@ -273,54 +329,70 @@ const MISCollectionAnalysis = ({ allCollectionData, loading }) => {
       </Box>
 
       {/* Bottom Row */}
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1.5fr 1fr" }, gap: 2 }}>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
         
         {/* Month Wise */}
         <Paper elevation={0} sx={CARD_STYLE}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-            <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#1e293b" }}>
+          <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", mb: 2, flexWrap: "wrap", gap: 1 }}>
+            <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#1e293b", flex: 1, minWidth: "120px" }}>
               Month Wise Collection
             </Typography>
-            {renderHeaderOptions("Month Wise Collection", monthData)}
+            <Box sx={{ display: "flex", justifyContent: "flex-end", flexShrink: 0 }}>
+              {renderHeaderOptions("Month Wise Collection", monthData)}
+            </Box>
           </Box>
-          <Box sx={{ flex: 1, minHeight: 300 }}>
+          <Box sx={{ height: 320, width: "100%", mt: 1 }}>
             {monthData.length > 0 ? (
-              <LineChart
-                dataset={monthData}
-                xAxis={[{ scaleType: "point", dataKey: "name" }]}
-                yAxis={[{ valueFormatter: (v) => formatValue(v) }]}
-                series={lineSeries}
-                margin={{ left: 60, right: 20, top: 40, bottom: 40 }}
-                sx={chartSx}
-                slotProps={{
-                  legend: { direction: 'row', position: { vertical: 'top', horizontal: 'right' }, padding: 0 }
-                }}
-              />
+                  <LineChart
+                    dataset={monthData}
+                    height={320}
+                    xAxis={[{ scaleType: "point", dataKey: "name" }]}
+                    yAxis={[{ valueFormatter: (v) => formatValue(v) }]}
+                    series={lineSeries}
+                    margin={{ left: 60, right: 20, top: 40, bottom: 40 }}
+                    sx={chartSx}
+                    slotProps={{
+                      ...commonSlotProps,
+                      legend: { direction: 'row', position: { vertical: 'top', horizontal: 'right' }, padding: 0 }
+                    }}
+                  />
             ) : null}
           </Box>
         </Paper>
 
         {/* Module Wise */}
         <Paper elevation={0} sx={CARD_STYLE}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-            <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#1e293b" }}>
+          <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", mb: 2, flexWrap: "wrap", gap: 1 }}>
+            <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#1e293b", flex: 1, minWidth: "120px" }}>
               Module Wise Collection
             </Typography>
-            {renderHeaderOptions("Module Wise Collection", moduleData)}
+            <Box sx={{ display: "flex", justifyContent: "flex-end", flexShrink: 0 }}>
+              {renderHeaderOptions("Module Wise Collection", moduleData)}
+            </Box>
           </Box>
-          <Box sx={{ flex: 1, minHeight: 300 }}>
+          <Box sx={{ height: 320, width: "100%", mt: 1 }}>
             {moduleData.length > 0 ? (
-              <BarChart
-                dataset={moduleData.slice(0, 8)}
-                xAxis={[{ scaleType: "band", dataKey: "name", tickLabelStyle: { fontSize: 10 } }]}
-                yAxis={[{ valueFormatter: (v) => formatValue(v) }]}
-                series={barSeries}
-                margin={{ left: 60, right: 20, top: 40, bottom: 60 }}
-                sx={chartSx}
-                slotProps={{
-                  legend: { direction: 'row', position: { vertical: 'top', horizontal: 'right' }, padding: 0 }
-                }}
-              />
+                  <BarChart
+                    dataset={moduleData.slice(0, 8)}
+                    height={320}
+                    xAxis={[{ 
+                        scaleType: "band", 
+                        dataKey: "name", 
+                        tickLabelStyle: { fontSize: 10, fontWeight: 600, fill: "#475569" },
+                    }]}
+                    yAxis={[{ 
+                        scaleType: "linear",
+                        valueFormatter: (v) => formatValue(v),
+                        tickLabelStyle: { fontSize: 10, fontWeight: 600, fill: "#94a3b8" },
+                    }]}
+                    series={barSeries}
+                    margin={{ left: 60, right: 40, top: 40, bottom: 40 }}
+                    sx={chartSx}
+                    slotProps={{
+                      ...commonSlotProps,
+                      legend: { direction: 'row', position: { vertical: 'top', horizontal: 'right' }, padding: 0 }
+                    }}
+                  />
             ) : null}
           </Box>
         </Paper>

@@ -47,7 +47,6 @@ const CARD_PADDING = "12px 14px 0 14px"; // top/side padding (bottom handled by 
 const CARD_RADIUS = "16px";
 const CARD_SHADOW = "0 4px 24px rgba(25,118,210,0.08), 0 1px 4px rgba(0,0,0,0.04)";
 
-// ─── Mini sparkline ───────────────────────────────────────────────────────────
 const MiniSparkline = ({ color = "#3b82f6" }) => {
  const points = "0,28 12,22 24,25 36,15 48,18 60,10 72,14 84,6 96,12 108,4 120,8";
  return (
@@ -62,6 +61,49 @@ const MiniSparkline = ({ color = "#3b82f6" }) => {
    <polygon fill={`url(#spark-${color.replace("#", "")})`} points={`${points} 120,32 0,32`} />
   </svg>
  );
+};
+
+const HEALTH_QUOTES = [
+    "The greatest wealth is health. Fetching your data...",
+    "Healing takes time, but your data won't... Just a moment!",
+    "Wherever the art of medicine is loved, there is also a love of humanity.",
+    "Good health and good sense are two of life's greatest blessings.",
+    "Medicine cures diseases, but only doctors can cure patients."
+];
+
+const BouncingDotsLoader = () => {
+    const quote = useMemo(() => HEALTH_QUOTES[Math.floor(Math.random() * HEALTH_QUOTES.length)], []);
+    return (
+        <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '350px', width: '100%', gap: 3 }}>
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <style>{`
+                    @keyframes googleBounce {
+                        0%, 100% { transform: translateY(0) scale(1); }
+                        50% { transform: translateY(-20px) scale(1.1); }
+                    }
+                    .g-dot {
+                        width: 14px;
+                        height: 14px;
+                        border-radius: 50%;
+                        animation: googleBounce 1.2s infinite ease-in-out;
+                    }
+                    .g-dot-1 { background-color: #4285F4; animation-delay: 0s; }
+                    .g-dot-2 { background-color: #EA4335; animation-delay: 0.15s; }
+                    .g-dot-3 { background-color: #FBBC05; animation-delay: 0.3s; }
+                    .g-dot-4 { background-color: #34A853; animation-delay: 0.45s; }
+                    .g-dot-5 { background-color: #8b5cf6; animation-delay: 0.6s; }
+                `}</style>
+                <Box className="g-dot g-dot-1" />
+                <Box className="g-dot g-dot-2" />
+                <Box className="g-dot g-dot-3" />
+                <Box className="g-dot g-dot-4" />
+                <Box className="g-dot g-dot-5" />
+            </Box>
+            <Typography sx={{ color: '#64748b', fontSize: '0.95rem', fontWeight: 600, fontStyle: 'italic', maxWidth: '80%', textAlign: 'center', animation: "fadeIn 0.5s ease-in-out" }}>
+                "{quote}"
+            </Typography>
+        </Box>
+    );
 };
 
 
@@ -322,7 +364,7 @@ const Dashboard = () => {
  }, [allCollectionData, allRevenueData, allOutstandingData]);
 
 
-
+ const isDataLoading = statsLoading || allCollectionLoading || allRevenueLoading || allOutstandingLoading;
 
  return (
   <DashboardLayout>
@@ -346,10 +388,11 @@ const Dashboard = () => {
      )}
 
      {/* ═══════ KPI Cards Row — Flex (pixel-perfect equal width, Grahaak style) ═══════ */}
-     {statsLoading ? <CardSkeletonLoading count={9} columns={3} /> : (
-      <Box
-       sx={{
-        display: "flex",
+     {isDataLoading ? <BouncingDotsLoader /> : (
+      <>
+       <Box
+        sx={{
+         display: "flex",
         flexDirection: { xs: "column", sm: "row" },
         flexWrap: "wrap",
         gap: 2,
@@ -462,61 +505,60 @@ const Dashboard = () => {
         );
        })}
       </Box>
-     )}
 
-
-
-     {/* ═══════ Bottom Features Strip — Static 4 Equal Cards ═══════ */}
-     <Box sx={{ display: "flex", gap: 1.5, width: "100%", flexWrap: { xs: "wrap", sm: "nowrap" }, boxSizing: "border-box" }}>
-      {FEATURES.map((feat, i) => (
-       <Box key={i} sx={{ flex: "1 1 0", minWidth: { xs: "calc(50% - 6px)", sm: 0 } }}>
-        <Paper
-         elevation={0}
-         sx={{
-          borderRadius: "16px",
-          bgcolor: "#fff",
-          border: "1px solid #e8f0fe",
-          boxShadow: "0 2px 12px rgba(25,118,210,0.04)",
-          p: 2,
-          display: "flex",
-          alignItems: "center",
-          gap: 1.5,
-          height: "100%",
-          transition: "all 0.25s ease",
-          cursor: "default",
-          "&:hover": {
-           transform: "translateY(-3px)",
-           boxShadow: "0 8px 28px rgba(25,118,210,0.1)",
-          },
-         }}
-        >
-         <Box
+      {/* ═══════ Bottom Features Strip — Static 4 Equal Cards ═══════ */}
+      <Box sx={{ display: "flex", gap: 1.5, width: "100%", flexWrap: { xs: "wrap", sm: "nowrap" }, boxSizing: "border-box" }}>
+       {FEATURES.map((feat, i) => (
+        <Box key={i} sx={{ flex: "1 1 0", minWidth: { xs: "calc(50% - 6px)", sm: 0 } }}>
+         <Paper
+          elevation={0}
           sx={{
-           width: 40,
-           height: 40,
-           borderRadius: "12px",
-           background: feat.iconBg,
+           borderRadius: "16px",
+           bgcolor: "#fff",
+           border: "1px solid #e8f0fe",
+           boxShadow: "0 2px 12px rgba(25,118,210,0.04)",
+           p: 2,
            display: "flex",
            alignItems: "center",
-           justifyContent: "center",
-           color: feat.iconColor,
-           flexShrink: 0,
+           gap: 1.5,
+           height: "100%",
+           transition: "all 0.25s ease",
+           cursor: "default",
+           "&:hover": {
+            transform: "translateY(-3px)",
+            boxShadow: "0 8px 28px rgba(25,118,210,0.1)",
+           },
           }}
-         >
-          {feat.icon}
+          >
+           <Box
+            sx={{
+             width: 40,
+             height: 40,
+             borderRadius: "12px",
+             background: feat.iconBg,
+             display: "flex",
+             alignItems: "center",
+             justifyContent: "center",
+             color: feat.iconColor,
+             flexShrink: 0,
+            }}
+           >
+            {feat.icon}
+           </Box>
+           <Box>
+            <Typography sx={{ fontWeight: 700, color: "#0f172a", fontSize: "0.82rem", lineHeight: 1.2 }}>
+             {feat.title}
+            </Typography>
+            <Typography sx={{ color: "#94a3b8", fontSize: "0.68rem", lineHeight: 1.3 }}>
+             {feat.desc}
+            </Typography>
+           </Box>
+          </Paper>
          </Box>
-         <Box>
-          <Typography sx={{ fontWeight: 700, color: "#0f172a", fontSize: "0.82rem", lineHeight: 1.2 }}>
-           {feat.title}
-          </Typography>
-          <Typography sx={{ color: "#94a3b8", fontSize: "0.68rem", lineHeight: 1.3 }}>
-           {feat.desc}
-          </Typography>
-         </Box>
-        </Paper>
+        ))}
        </Box>
-      ))}
-     </Box>
+      </>
+     )}
 
      {/* ═══════ Drilldown Modals ═══════ */}
      {["outstanding", "cashPatientOutstanding", "orgOutstanding"].includes(modalKey) ? (

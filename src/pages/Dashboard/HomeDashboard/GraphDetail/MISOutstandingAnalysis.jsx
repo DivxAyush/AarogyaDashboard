@@ -1,9 +1,64 @@
 import React, { useMemo, useState } from "react";
 import { Box, Paper, Typography, IconButton, Tooltip as MuiTooltip, Chip, Modal, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
 import { BarChart, LineChart } from "@mui/x-charts";
+import { Skeleton } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import CloseIcon from "@mui/icons-material/Close";
 import OutstandingDetailsModal from "../Detail/OutstandingDetailsModal";
+
+const AnalysisSkeleton = () => {
+    const glassCard = {
+        ...CARD_STYLE,
+        background: 'linear-gradient(135deg, rgba(255,255,255,0.8), rgba(255,255,255,0.5))',
+        backdropFilter: 'blur(12px)',
+        border: '1px solid rgba(255,255,255,0.8)',
+    };
+    
+    return (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
+                {[1, 2].map(i => (
+                    <Paper key={i} elevation={0} sx={glassCard}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                            <Skeleton animation="wave" variant="text" width={200} height={24} />
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                <Skeleton animation="wave" variant="rounded" width={60} height={26} sx={{ borderRadius: '6px' }} />
+                                <Skeleton animation="wave" variant="circular" width={26} height={26} />
+                            </Box>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 250, mt: 4, pb: 2 }}>
+                            {[1, 2, 3, 4, 5, 6].map(j => (
+                                <Box key={j} sx={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+                                    <Skeleton animation="wave" variant="rounded" width="60%" height={`${Math.random() * 60 + 20}%`} sx={{ borderRadius: '4px 4px 0 0' }} />
+                                </Box>
+                            ))}
+                        </Box>
+                    </Paper>
+                ))}
+            </Box>
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1.5fr 1fr" }, gap: 2 }}>
+                {[1, 2].map(i => (
+                    <Paper key={i} elevation={0} sx={glassCard}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                            <Skeleton animation="wave" variant="text" width={200} height={24} />
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                <Skeleton animation="wave" variant="rounded" width={60} height={26} sx={{ borderRadius: '6px' }} />
+                                <Skeleton animation="wave" variant="circular" width={26} height={26} />
+                            </Box>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 300, mt: 4, pb: 2 }}>
+                            {[1, 2, 3, 4, 5, 6, 7, 8].map(j => (
+                                <Box key={j} sx={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+                                    <Skeleton animation="wave" variant="rounded" width="50%" height={`${Math.random() * 70 + 20}%`} sx={{ borderRadius: '4px 4px 0 0' }} />
+                                </Box>
+                            ))}
+                        </Box>
+                    </Paper>
+                ))}
+            </Box>
+        </Box>
+    );
+};
 
 const CARD_STYLE = {
   p: 2,
@@ -149,7 +204,7 @@ const MISOutstandingAnalysis = ({ allOutstandingData, loading }) => {
   }, [allOutstandingData]);
 
   if (loading) {
-    return <Box sx={{ p: 4, textAlign: "center" }}>Loading Analysis...</Box>;
+    return <AnalysisSkeleton />;
   }
 
   if (!finYears.length) {
@@ -174,13 +229,36 @@ const MISOutstandingAnalysis = ({ allOutstandingData, loading }) => {
     dataKey: fy,
     label: fy,
     color: getFyLineColor(idx),
-    valueFormatter: (v) => formatValue(v)
+    valueFormatter: (v) => formatValue(v),
+    barLabelPlacement: "outside",
+    barLabel: (item) => {
+        let val = item?.value ?? item;
+        if (!val || val === 0) return '';
+        if (val >= 10000000) return `${(val / 10000000).toFixed(2)}Cr`;
+        if (val >= 100000) return `${(val / 100000).toFixed(2)}L`;
+        if (val >= 1000) return `${(val / 1000).toFixed(1)}K`;
+        return val.toString();
+    }
   }));
 
   const chartSx = {
     "& .MuiChartsAxis-tickLabel": { fill: "#475569", fontSize: "0.75rem", fontWeight: 600 },
     "& .MuiChartsAxis-line": { stroke: "#cbd5e1" },
     "& .MuiChartsAxis-tick": { stroke: "#cbd5e1" },
+  };
+
+  const tooltipProps = {
+    legend: { direction: 'row', position: { vertical: 'top', horizontal: 'middle' }, itemMarkWidth: 10, itemMarkHeight: 10, labelStyle: { fontSize: 11, fontWeight: 600, fill: '#475569' } },
+    popper: {
+        sx: {
+            "& .MuiChartsTooltip-root": { p: 0.5, borderRadius: '6px' },
+            "& .MuiChartsTooltip-table": { '& td, & th': { p: '2px 6px !important', fontSize: '10px !important' } },
+            "& .MuiTypography-root": { fontSize: '10px !important', fontWeight: 'bold' },
+            "& .MuiChartsTooltip-mark": { width: '8px !important', height: '8px !important' }
+        }
+    },
+    bar: { rx: 4, ry: 4 },
+    barLabel: { style: { fontSize: '8px', fill: '#64748b', fontWeight: 600 } }
   };
 
   const renderHeaderOptions = (title, dataset) => (
@@ -201,16 +279,27 @@ const MISOutstandingAnalysis = ({ allOutstandingData, loading }) => {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
+      <style>{`
+          .MuiChartsTooltip-root { padding: 4px 8px !important; border-radius: 6px !important; }
+          .MuiChartsTooltip-table { margin: 0 !important; }
+          .MuiChartsTooltip-cell { padding: 2px 4px !important; }
+          .MuiChartsTooltip-labelCell, .MuiChartsTooltip-valueCell { font-size: 10px !important; font-weight: 600 !important; }
+          .MuiChartsTooltip-mark { width: 6px !important; height: 6px !important; border-radius: 50% !important; box-shadow: none !important; margin-right: 4px !important; }
+          .MuiBarLabel-root { font-size: 4.5px !important; font-weight: 600 !important; fill: #64748b !important; }
+          .recharts-wrapper, .recharts-surface, .recharts-pie-sector, path, svg { outline: none !important; -webkit-tap-highlight-color: transparent !important; }
+      `}</style>
       {/* Top Row */}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
         
         {/* Financial Year Wise */}
         <Paper elevation={0} sx={CARD_STYLE}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-           <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#1e293b" }}>
+          <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", mb: 2, flexWrap: "wrap", gap: 1 }}>
+           <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#1e293b", flex: 1, minWidth: "120px" }}>
              Financial Year Wise Outstanding
            </Typography>
-           {renderHeaderOptions("Financial Year Wise Outstanding", fyData)}
+           <Box sx={{ display: "flex", justifyContent: "flex-end", flexShrink: 0 }}>
+             {renderHeaderOptions("Financial Year Wise Outstanding", fyData)}
+           </Box>
           </Box>
           <Box sx={{ flex: 1, minHeight: 250 }}>
             {fyData.length > 0 ? (
@@ -225,7 +314,7 @@ const MISOutstandingAnalysis = ({ allOutstandingData, loading }) => {
                 }]}
                 margin={{ left: 60, right: 20, top: 20, bottom: 40 }}
                 sx={chartSx}
-                slotProps={{ legend: { hidden: true } }}
+                slotProps={tooltipProps}
               />
             ) : null}
           </Box>
@@ -233,11 +322,13 @@ const MISOutstandingAnalysis = ({ allOutstandingData, loading }) => {
 
         {/* Quarter Wise */}
         <Paper elevation={0} sx={CARD_STYLE}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-            <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#1e293b" }}>
+          <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", mb: 2, flexWrap: "wrap", gap: 1 }}>
+            <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#1e293b", flex: 1, minWidth: "120px" }}>
               Quarter Wise Outstanding
             </Typography>
-            {renderHeaderOptions("Quarter Wise Outstanding", quarterData)}
+            <Box sx={{ display: "flex", justifyContent: "flex-end", flexShrink: 0 }}>
+              {renderHeaderOptions("Quarter Wise Outstanding", quarterData)}
+            </Box>
           </Box>
           <Box sx={{ flex: 1, minHeight: 250 }}>
             {quarterData.length > 0 ? (
@@ -248,9 +339,7 @@ const MISOutstandingAnalysis = ({ allOutstandingData, loading }) => {
                 series={lineSeries}
                 margin={{ left: 60, right: 20, top: 40, bottom: 40 }}
                 sx={chartSx}
-                slotProps={{
-                  legend: { direction: 'row', position: { vertical: 'top', horizontal: 'right' }, padding: 0 }
-                }}
+                slotProps={tooltipProps}
               />
             ) : null}
           </Box>
@@ -263,11 +352,13 @@ const MISOutstandingAnalysis = ({ allOutstandingData, loading }) => {
         
         {/* Month Wise */}
         <Paper elevation={0} sx={CARD_STYLE}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-            <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#1e293b" }}>
+          <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", mb: 2, flexWrap: "wrap", gap: 1 }}>
+            <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#1e293b", flex: 1, minWidth: "120px" }}>
               Month Wise Outstanding
             </Typography>
-            {renderHeaderOptions("Month Wise Outstanding", monthData)}
+            <Box sx={{ display: "flex", justifyContent: "flex-end", flexShrink: 0 }}>
+              {renderHeaderOptions("Month Wise Outstanding", monthData)}
+            </Box>
           </Box>
           <Box sx={{ flex: 1, minHeight: 300 }}>
             {monthData.length > 0 ? (
@@ -278,9 +369,7 @@ const MISOutstandingAnalysis = ({ allOutstandingData, loading }) => {
                 series={lineSeries}
                 margin={{ left: 60, right: 20, top: 40, bottom: 40 }}
                 sx={chartSx}
-                slotProps={{
-                  legend: { direction: 'row', position: { vertical: 'top', horizontal: 'right' }, padding: 0 }
-                }}
+                slotProps={tooltipProps}
               />
             ) : null}
           </Box>
@@ -288,11 +377,13 @@ const MISOutstandingAnalysis = ({ allOutstandingData, loading }) => {
 
         {/* Module Wise */}
         <Paper elevation={0} sx={CARD_STYLE}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-            <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#1e293b" }}>
+          <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", mb: 2, flexWrap: "wrap", gap: 1 }}>
+            <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#1e293b", flex: 1, minWidth: "120px" }}>
               Module Wise Outstanding
             </Typography>
-            {renderHeaderOptions("Module Wise Outstanding", moduleData)}
+            <Box sx={{ display: "flex", justifyContent: "flex-end", flexShrink: 0 }}>
+              {renderHeaderOptions("Module Wise Outstanding", moduleData)}
+            </Box>
           </Box>
           <Box sx={{ flex: 1, minHeight: 300 }}>
             {moduleData.length > 0 ? (
@@ -303,9 +394,7 @@ const MISOutstandingAnalysis = ({ allOutstandingData, loading }) => {
                 series={barSeries}
                 margin={{ left: 60, right: 20, top: 40, bottom: 60 }}
                 sx={chartSx}
-                slotProps={{
-                  legend: { direction: 'row', position: { vertical: 'top', horizontal: 'right' }, padding: 0 }
-                }}
+                slotProps={tooltipProps}
               />
             ) : null}
           </Box>
