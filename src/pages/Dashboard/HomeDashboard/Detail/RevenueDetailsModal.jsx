@@ -88,6 +88,7 @@ const RevenueDetailsModal = ({ open, onClose, data, loading, paymentMode }) => {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleSearchChange = useCallback((e) => {
     setSearch(e.target.value);
@@ -157,7 +158,11 @@ const RevenueDetailsModal = ({ open, onClose, data, loading, paymentMode }) => {
   }, [filteredData, page, rowsPerPage]);
 
   const handleExportXLSX = useCallback(() => {
-    exportToExcel(filteredData, columns, "Revenue Details", "revenue");
+    setIsExporting(true);
+    setTimeout(() => {
+      exportToExcel(filteredData, columns, "Revenue Details", "revenue_details");
+      setIsExporting(false);
+    }, 100);
   }, [filteredData, columns]);
 
   const handleClose = useCallback(() => {
@@ -199,7 +204,7 @@ const RevenueDetailsModal = ({ open, onClose, data, loading, paymentMode }) => {
               <ReceiptOutlinedIcon sx={{ color: "#fff", fontSize: 26 }} />
             </Box>
             <Box>
-              <Typography variant="h5" sx={{ color: "#0f172a", fontWeight: 800, letterSpacing: "-0.5px", lineHeight: 1.2 }}>
+              <Typography variant="h5" sx={{ color: "#0f172a", fontWeight: 800, letterSpacing: "-0.5px", lineHeight: 1.2, fontSize: { xs: "1.2rem", sm: "1.5rem" } }}>
                 Revenue Details
               </Typography>
               {paymentMode && (
@@ -320,7 +325,7 @@ const RevenueDetailsModal = ({ open, onClose, data, loading, paymentMode }) => {
             size="small"
             startIcon={<DownloadIcon />}
             onClick={handleExportXLSX}
-            disabled={!filteredData.length || loading}
+            disabled={!filteredData.length || loading || isExporting}
             sx={{
               display: { xs: "none", sm: "flex" },
               borderRadius: "10px",
@@ -330,24 +335,24 @@ const RevenueDetailsModal = ({ open, onClose, data, loading, paymentMode }) => {
               px: 2.5,
             }}
           >
-            Export Excel
+            {isExporting ? "Exporting..." : "Export Excel"}
           </Button>
 
           <IconButton
             onClick={handleExportXLSX}
-            disabled={!filteredData.length || loading}
+            disabled={!filteredData.length || loading || isExporting}
             sx={{
               display: { xs: "flex", sm: "none" },
-              background: "linear-gradient(135deg, #1565c0, #1976d2)",
+              background: "linear-gradient(135deg, #10b981, #059669)",
               color: "#fff",
               borderRadius: "8px",
-              width: 40,
-              height: 40,
+              width: 32,
+              height: 32,
               "&:hover": { opacity: 0.9 },
               "&.Mui-disabled": { background: "#e2e8f0", color: "#94a3b8" }
             }}
           >
-            <DownloadIcon fontSize="small" />
+            {isExporting ? <CircularProgress size={16} color="inherit" /> : <DownloadIcon fontSize="small" />}
           </IconButton>
         </Box>
 

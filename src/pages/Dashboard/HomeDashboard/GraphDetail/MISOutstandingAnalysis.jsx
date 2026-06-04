@@ -1,0 +1,334 @@
+import React, { useMemo, useState } from "react";
+import { Box, Paper, Typography, IconButton, Tooltip as MuiTooltip, Chip, Modal, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
+import { BarChart, LineChart } from "@mui/x-charts";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import CloseIcon from "@mui/icons-material/Close";
+import OutstandingDetailsModal from "../Detail/OutstandingDetailsModal";
+
+const CARD_STYLE = {
+  p: 2,
+  borderRadius: "16px",
+  background: "#ffffff",
+  border: "1px solid #e2e8f0",
+  boxShadow: "0 4px 12px rgba(0,0,0,0.02)",
+  height: "100%",
+  display: "flex",
+  flexDirection: "column",
+};
+
+const formatValue = (v) => {
+  if (!v) return "₹0";
+  if (v >= 10000000) return `₹${(v / 10000000).toFixed(1)}Cr`;
+  if (v >= 100000) return `₹${(v / 100000).toFixed(1)}L`;
+  if (v >= 1000) return `₹${(v / 1000).toFixed(1)}K`;
+  return `₹${v.toLocaleString("en-IN")}`;
+};
+
+const formatFullINR = (v) => {
+ const n = Number(v);
+ return isNaN(n) ? "₹0" : `₹${n.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
+
+const AggregatedDataModal = ({ open, onClose, title, dataset }) => {
+ return (
+  <Modal open={open} onClose={onClose} closeAfterTransition>
+   <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: { xs: "95vw", sm: "500px" }, bgcolor: '#ffffff', boxShadow: 24, borderRadius: "12px", overflow: "hidden" }}>
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, bgcolor: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+     <Typography sx={{ fontWeight: 800, fontSize: "1rem", color: "#1e293b" }}>{title}</Typography>
+     <IconButton size="small" onClick={onClose}><CloseIcon sx={{ fontSize: 20 }} /></IconButton>
+    </Box>
+    <Box sx={{ p: 2, maxHeight: "70vh", overflowY: "auto" }}>
+     <TableContainer>
+      <Table size="small">
+       <TableHead>
+        <TableRow sx={{ bgcolor: "#f1f5f9" }}>
+         <TableCell sx={{ fontWeight: 700, color: "#475569" }}>Category</TableCell>
+         <TableCell sx={{ fontWeight: 700, color: "#475569", textAlign: "right" }}>Outstanding Balance</TableCell>
+        </TableRow>
+       </TableHead>
+       <TableBody>
+        {(dataset || []).map((row, i) => (
+         <TableRow key={i} hover>
+          <TableCell sx={{ fontWeight: 600, color: "#334155" }}>{row.name || row.label || row.financialyear}</TableCell>
+          <TableCell sx={{ textAlign: "right", fontWeight: 700, color: "#d97706" }}>{formatFullINR(row.balance)}</TableCell>
+         </TableRow>
+        ))}
+       </TableBody>
+      </Table>
+     </TableContainer>
+    </Box>
+   </Box>
+  </Modal>
+ );
+};
+
+const MISOutstandingAnalysis = ({ allOutstandingData, loading }) => {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [aggModal, setAggModal] = useState({ open: false, title: "", dataset: [] });
+
+  const {
+    fyData,
+    quarterData,
+    monthData,
+    moduleData,
+    finYears,
+  } = useMemo(() => {
+    if (!allOutstandingData?.length) {
+      return { fyData: [], quarterData: [], monthData: [], moduleData: [], finYears: [] };
+    }
+
+    const fyMap = {};
+    const qMap = {};
+    const mMap = {};
+    const modMap = {};
+
+    const fySet = new Set();
+
+    // Init month map with 1-12
+    const monthNames = ["Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
+    monthNames.forEach((m, idx) => {
+      mMap[idx + 1] = { name: m, monthNum: idx + 1, balance: 0 };
+    });
+
+    // Init quarter map with 1-4
+    [1, 2, 3, 4].forEach(q => {
+      qMap[q] = { name: `Q${q}`, balance: 0 };
+    });
+
+    allOutstandingData.forEach(row => {
+      const fy = row.financialyear || "Unknown";
+      if (fy !== "Unknown") fySet.add(fy);
+      
+      const bal = Number(row.balance || row.Outstanding || row.outstanding) || 0;
+      
+      // Financial Year Map
+      if (!fyMap[fy]) fyMap[fy] = { financialyear: fy, balance: 0 };
+      fyMap[fy].balance += bal;
+
+      // Quarter Map
+      const q = row.finquarternumber;
+      if (q && qMap[q]) {
+        qMap[q][fy] = (qMap[q][fy] || 0) + bal; 
+        qMap[q].balance += bal;
+      }
+
+      // Month Map
+      const m = row.finmonthnumber;
+      if (m && mMap[m]) {
+        mMap[m][fy] = (mMap[m][fy] || 0) + bal;
+        mMap[m].balance += bal;
+      }
+
+      // Module Map
+      const mod = row.module || row.Module || "(Blank)";
+      if (!modMap[mod]) modMap[mod] = { name: mod, balance: 0 };
+      modMap[mod][fy] = (modMap[mod][fy] || 0) + bal;
+      modMap[mod].balance += bal;
+    });
+
+    const finYearsArr = Array.from(fySet).sort();
+
+    const finalFyData = Object.values(fyMap).sort((a, b) => a.financialyear.localeCompare(b.financialyear));
+    const finalQuarterData = [1, 2, 3, 4].map(q => qMap[q]);
+    const finalMonthData = Object.values(mMap).sort((a, b) => a.monthNum - b.monthNum);
+    
+    // Sort modules by total balance across all years
+    const finalModuleData = Object.values(modMap).sort((a, b) => {
+      const totalA = finYearsArr.reduce((sum, fy) => sum + (a[fy] || 0), 0);
+      const totalB = finYearsArr.reduce((sum, fy) => sum + (b[fy] || 0), 0);
+      return totalB - totalA;
+    });
+
+    return {
+      fyData: finalFyData,
+      quarterData: finalQuarterData,
+      monthData: finalMonthData,
+      moduleData: finalModuleData,
+      finYears: finYearsArr
+    };
+  }, [allOutstandingData]);
+
+  if (loading) {
+    return <Box sx={{ p: 4, textAlign: "center" }}>Loading Analysis...</Box>;
+  }
+
+  if (!finYears.length) {
+    return <Box sx={{ p: 4, textAlign: "center", color: "#64748b" }}>No data available for analysis</Box>;
+  }
+
+  const getFyLineColor = (index) => {
+    const colors = ["#f59e0b", "#3b82f6", "#ef4444", "#10b981", "#8b5cf6"]; // Orange first
+    return colors[index % colors.length];
+  };
+
+  const lineSeries = finYears.map((fy, idx) => ({
+    dataKey: fy,
+    label: fy,
+    color: getFyLineColor(idx),
+    showMark: true,
+    valueFormatter: (v) => formatValue(v),
+    curve: "catmullRom"
+  }));
+
+  const barSeries = finYears.map((fy, idx) => ({
+    dataKey: fy,
+    label: fy,
+    color: getFyLineColor(idx),
+    valueFormatter: (v) => formatValue(v)
+  }));
+
+  const chartSx = {
+    "& .MuiChartsAxis-tickLabel": { fill: "#475569", fontSize: "0.75rem", fontWeight: 600 },
+    "& .MuiChartsAxis-line": { stroke: "#cbd5e1" },
+    "& .MuiChartsAxis-tick": { stroke: "#cbd5e1" },
+  };
+
+  const renderHeaderOptions = (title, dataset) => (
+   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+    <Chip 
+     label="View All" 
+     size="small" 
+     onClick={() => setAggModal({ open: true, title: `${title} Details`, dataset })} 
+     sx={{ fontSize: "0.65rem", height: 22, bgcolor: "#f1f5f9", color: "#475569", fontWeight: 700, cursor: "pointer", "&:hover": { bgcolor: "#e2e8f0" } }} 
+    />
+    <MuiTooltip title="View Data">
+     <IconButton size="small" onClick={() => setModalOpen(true)} sx={{ p: 0.5, color: "#64748b", cursor: "pointer" }}>
+      <MoreVertIcon sx={{ fontSize: 18, cursor: "pointer" }} />
+     </IconButton>
+    </MuiTooltip>
+   </Box>
+  );
+
+  return (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
+      {/* Top Row */}
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
+        
+        {/* Financial Year Wise */}
+        <Paper elevation={0} sx={CARD_STYLE}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+           <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#1e293b" }}>
+             Financial Year Wise Outstanding
+           </Typography>
+           {renderHeaderOptions("Financial Year Wise Outstanding", fyData)}
+          </Box>
+          <Box sx={{ flex: 1, minHeight: 250 }}>
+            {fyData.length > 0 ? (
+              <BarChart
+                dataset={fyData}
+                xAxis={[{ scaleType: "band", dataKey: "financialyear" }]}
+                yAxis={[{ valueFormatter: (v) => formatValue(v) }]}
+                series={[{ 
+                  dataKey: "balance", 
+                  color: "#fbbf24", // Yellow-Amber
+                  valueFormatter: (v) => formatValue(v) 
+                }]}
+                margin={{ left: 60, right: 20, top: 20, bottom: 40 }}
+                sx={chartSx}
+                slotProps={{ legend: { hidden: true } }}
+              />
+            ) : null}
+          </Box>
+        </Paper>
+
+        {/* Quarter Wise */}
+        <Paper elevation={0} sx={CARD_STYLE}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+            <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#1e293b" }}>
+              Quarter Wise Outstanding
+            </Typography>
+            {renderHeaderOptions("Quarter Wise Outstanding", quarterData)}
+          </Box>
+          <Box sx={{ flex: 1, minHeight: 250 }}>
+            {quarterData.length > 0 ? (
+              <LineChart
+                dataset={quarterData}
+                xAxis={[{ scaleType: "point", dataKey: "name" }]}
+                yAxis={[{ valueFormatter: (v) => formatValue(v) }]}
+                series={lineSeries}
+                margin={{ left: 60, right: 20, top: 40, bottom: 40 }}
+                sx={chartSx}
+                slotProps={{
+                  legend: { direction: 'row', position: { vertical: 'top', horizontal: 'right' }, padding: 0 }
+                }}
+              />
+            ) : null}
+          </Box>
+        </Paper>
+
+      </Box>
+
+      {/* Bottom Row */}
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1.5fr 1fr" }, gap: 2 }}>
+        
+        {/* Month Wise */}
+        <Paper elevation={0} sx={CARD_STYLE}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+            <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#1e293b" }}>
+              Month Wise Outstanding
+            </Typography>
+            {renderHeaderOptions("Month Wise Outstanding", monthData)}
+          </Box>
+          <Box sx={{ flex: 1, minHeight: 300 }}>
+            {monthData.length > 0 ? (
+              <LineChart
+                dataset={monthData}
+                xAxis={[{ scaleType: "point", dataKey: "name" }]}
+                yAxis={[{ valueFormatter: (v) => formatValue(v) }]}
+                series={lineSeries}
+                margin={{ left: 60, right: 20, top: 40, bottom: 40 }}
+                sx={chartSx}
+                slotProps={{
+                  legend: { direction: 'row', position: { vertical: 'top', horizontal: 'right' }, padding: 0 }
+                }}
+              />
+            ) : null}
+          </Box>
+        </Paper>
+
+        {/* Module Wise */}
+        <Paper elevation={0} sx={CARD_STYLE}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+            <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#1e293b" }}>
+              Module Wise Outstanding
+            </Typography>
+            {renderHeaderOptions("Module Wise Outstanding", moduleData)}
+          </Box>
+          <Box sx={{ flex: 1, minHeight: 300 }}>
+            {moduleData.length > 0 ? (
+              <BarChart
+                dataset={moduleData.slice(0, 8)}
+                xAxis={[{ scaleType: "band", dataKey: "name", tickLabelStyle: { fontSize: 10 } }]}
+                yAxis={[{ valueFormatter: (v) => formatValue(v) }]}
+                series={barSeries}
+                margin={{ left: 60, right: 20, top: 40, bottom: 60 }}
+                sx={chartSx}
+                slotProps={{
+                  legend: { direction: 'row', position: { vertical: 'top', horizontal: 'right' }, padding: 0 }
+                }}
+              />
+            ) : null}
+          </Box>
+        </Paper>
+
+      </Box>
+
+      <OutstandingDetailsModal 
+       open={modalOpen} 
+       onClose={() => setModalOpen(false)} 
+       data={allOutstandingData} 
+       loading={loading} 
+       paymentMode="Outstanding" 
+      />
+
+      <AggregatedDataModal
+       open={aggModal.open}
+       onClose={() => setAggModal(prev => ({ ...prev, open: false }))}
+       title={aggModal.title}
+       dataset={aggModal.dataset}
+      />
+    </Box>
+  );
+};
+
+export default MISOutstandingAnalysis;

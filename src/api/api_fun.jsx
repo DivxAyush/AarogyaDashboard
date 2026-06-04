@@ -98,72 +98,64 @@ export async function getDatasetData(sql) {
   return data.data;
 }
 
+export async function getDistinctValues(datasourceId, columnName) {
+  const token = await getStoredToken();
+  const payload = {
+    datasource: { id: datasourceId, type: "table" },
+    queries: [{
+      columns: [columnName],
+      metrics: ["count"],
+      row_limit: 5000
+    }],
+    result_format: "json",
+    result_type: "full"
+  };
+
+  const res = await fetch(`${SUPERSET_URL}/api/v1/chart/data`, {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + token,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    return [];
+  }
+  const data = await res.json();
+  return data.result[0].data || [];
+}
+
 export async function getAllCollectionData(filters) {
   let query = "SELECT * FROM vw_collection WHERE 1=1";
-
   if (filters) {
-    if (filters.date) {
-      if (filters.date.from) {
-        query += ` AND CAST(date AS DATE) >= '${filters.date.from}'`;
-      }
-      if (filters.date.to) {
-        query += ` AND CAST(date AS DATE) <= '${filters.date.to}'`;
-      }
-    }
-    if (filters.siteCode) {
-      query += ` AND site_code = '${filters.siteCode}'`;
-    }
-    if (filters.speciality) {
-      query += ` AND speciality = '${filters.speciality}'`;
-    }
+    if (filters.date?.from) query += ` AND CAST(date AS DATE) >= '${filters.date.from}'`;
+    if (filters.date?.to) query += ` AND CAST(date AS DATE) <= '${filters.date.to}'`;
+    if (filters.siteCode) query += ` AND site_code = '${filters.siteCode}'`;
+    if (filters.speciality) query += ` AND speciality = '${filters.speciality}'`;
   }
-
   return await getDatasetData(query);
 }
 
 export async function getAllRevenueData(filters) {
   let query = "SELECT * FROM vw_revenue WHERE 1=1";
-
   if (filters) {
-    if (filters.date) {
-      if (filters.date.from) {
-        query += ` AND CAST(date AS DATE) >= '${filters.date.from}'`;
-      }
-      if (filters.date.to) {
-        query += ` AND CAST(date AS DATE) <= '${filters.date.to}'`;
-      }
-    }
-    if (filters.siteCode) {
-      query += ` AND site_code = '${filters.siteCode}'`;
-    }
-    if (filters.speciality) {
-      query += ` AND speciality = '${filters.speciality}'`;
-    }
+    if (filters.date?.from) query += ` AND CAST(date AS DATE) >= '${filters.date.from}'`;
+    if (filters.date?.to) query += ` AND CAST(date AS DATE) <= '${filters.date.to}'`;
+    if (filters.siteCode) query += ` AND site_code = '${filters.siteCode}'`;
+    if (filters.speciality) query += ` AND speciality = '${filters.speciality}'`;
   }
-
   return await getDatasetData(query);
 }
+
 export async function getAllOutstandingData(filters) {
   let query = "SELECT * FROM vw_outstanding WHERE 1=1";
-
   if (filters) {
-    if (filters.date) {
-      if (filters.date.from) {
-        query += ` AND CAST(date AS DATE) >= '${filters.date.from}'`;
-      }
-      if (filters.date.to) {
-        query += ` AND CAST(date AS DATE) <= '${filters.date.to}'`;
-      }
-    }
-    if (filters.siteCode) {
-      query += ` AND site_code = '${filters.siteCode}'`;
-    }
-    if (filters.speciality) {
-      query += ` AND speciality = '${filters.speciality}'`;
-    }
+    if (filters.date?.from) query += ` AND CAST(date AS DATE) >= '${filters.date.from}'`;
+    if (filters.date?.to) query += ` AND CAST(date AS DATE) <= '${filters.date.to}'`;
+    if (filters.siteCode) query += ` AND site_code = '${filters.siteCode}'`;
+    if (filters.speciality) query += ` AND speciality = '${filters.speciality}'`;
   }
-
   return await getDatasetData(query);
 }
-
-

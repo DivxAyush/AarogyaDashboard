@@ -15,12 +15,14 @@ import {
   DialogTitle,
   DialogContent,
   IconButton,
+  CircularProgress,
 } from "@mui/material";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import CheckIcon from "@mui/icons-material/Check";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import CloseIcon from "@mui/icons-material/Close";
+import { useData } from "../context/DataContext";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function toLocalISODate(d) {
@@ -229,7 +231,32 @@ const DashboardFilterBar = ({ filters, onChange, activeTab, onTabChange, siteCod
     [filters, onChange]
   );
 
+  const { allCollectionLoading, allRevenueLoading, allOutstandingLoading } = useData();
+  const isGlobalLoading = allCollectionLoading || allRevenueLoading || allOutstandingLoading;
+
   const [mobileModalOpen, setMobileModalOpen] = useState(false);
+  const [mobileFilters, setMobileFilters] = useState(filters);
+  const [isApplying, setIsApplying] = useState(false);
+
+  // Sync mobile filters when opening modal
+  React.useEffect(() => {
+    if (mobileModalOpen) {
+      setMobileFilters(filters);
+    }
+  }, [mobileModalOpen, filters]);
+
+  // Handle auto-close on loading complete
+  React.useEffect(() => {
+    if (isApplying && !isGlobalLoading) {
+      setIsApplying(false);
+      setMobileModalOpen(false);
+    }
+  }, [isGlobalLoading, isApplying]);
+
+  const handleApplyMobileFilters = () => {
+    setIsApplying(true);
+    onChange(mobileFilters);
+  };
 
   const selectSx = {
     borderRadius: "10px",
@@ -417,17 +444,17 @@ const DashboardFilterBar = ({ filters, onChange, activeTab, onTabChange, siteCod
       >
         <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontWeight: 800, color: "#0f172a" }}>
           Filters
-          <IconButton onClick={() => setMobileModalOpen(false)} size="small" sx={{ color: "#64748b" }}>
+          <IconButton onClick={() => setMobileModalOpen(false)} size="small" sx={{ color: "#64748b" }} disabled={isApplying}>
             <CloseIcon />
           </IconButton>
         </DialogTitle>
         <Divider />
-        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 3, pb: 4 }}>
           <Box>
             <Typography variant="caption" sx={{ fontWeight: 700, color: "#64748b", mb: 0.5, display: "block", textTransform: "uppercase" }}>
               Date Range
             </Typography>
-            <DateFilterButton value={filters.date} onChange={handleDateChange} />
+            <DateFilterButton value={mobileFilters.date} onChange={(dateVal) => setMobileFilters({ ...mobileFilters, date: dateVal })} />
           </Box>
 
           <Box>
@@ -436,18 +463,18 @@ const DashboardFilterBar = ({ filters, onChange, activeTab, onTabChange, siteCod
             </Typography>
             <FormControl size="small" fullWidth>
               <Select
-                value={filters.speciality || ""}
-                onChange={handleSpecialityChange}
+                value={mobileFilters.speciality || ""}
+                onChange={(e) => setMobileFilters({ ...mobileFilters, speciality: e.target.value })}
                 displayEmpty
                 sx={selectSx}
                 endAdornment={
-                  filters.speciality ? (
+                  mobileFilters.speciality ? (
                     <IconButton
                       size="small"
                       sx={{ position: "absolute", right: 28, p: 0.2 }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        onChange({ ...filters, speciality: "" });
+                        setMobileFilters({ ...mobileFilters, speciality: "" });
                       }}
                       onMouseDown={(e) => e.stopPropagation()}
                     >
@@ -479,18 +506,18 @@ const DashboardFilterBar = ({ filters, onChange, activeTab, onTabChange, siteCod
             </Typography>
             <FormControl size="small" fullWidth>
               <Select
-                value={filters.siteCode || ""}
-                onChange={handleSiteChange}
+                value={mobileFilters.siteCode || ""}
+                onChange={(e) => setMobileFilters({ ...mobileFilters, siteCode: e.target.value })}
                 displayEmpty
                 sx={selectSx}
                 endAdornment={
-                  filters.siteCode ? (
+                  mobileFilters.siteCode ? (
                     <IconButton
                       size="small"
                       sx={{ position: "absolute", right: 28, p: 0.2 }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        onChange({ ...filters, siteCode: "" });
+                        setMobileFilters({ ...mobileFilters, siteCode: "" });
                       }}
                       onMouseDown={(e) => e.stopPropagation()}
                     >
@@ -515,6 +542,24 @@ const DashboardFilterBar = ({ filters, onChange, activeTab, onTabChange, siteCod
               </Select>
             </FormControl>
           </Box>
+          
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={handleApplyMobileFilters}
+            disabled={isApplying}
+            sx={{
+              mt: 1,
+              borderRadius: "10px",
+              py: 1.2,
+              fontWeight: 700,
+              textTransform: "none",
+              background: "linear-gradient(135deg, #2563eb, #3b82f6)",
+              "&:hover": { opacity: 0.9 },
+            }}
+          >
+            {isApplying ? <CircularProgress size={24} sx={{ color: "#fff" }} /> : "Apply Filters"}
+          </Button>
         </DialogContent>
       </Dialog>
     </Box>

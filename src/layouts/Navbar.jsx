@@ -86,11 +86,11 @@ const Navbar = () => {
 
         {/* Right actions */}
         <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.5, md: 1.5 } }}>
-          <Tooltip title="Notifications">
+          {/* <Tooltip title="Notifications">
             <IconButton sx={{ color: "#78909c", "&:hover": { bgcolor: "#e3f2fd", color: "#1976d2" } }}>
               <NotificationsNoneIcon />
             </IconButton>
-          </Tooltip>
+          </Tooltip> */}
 
           {/* User avatar */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>

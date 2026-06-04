@@ -157,28 +157,32 @@ const GraphWiseDetail = ({ stats, allCollectionData, allRevenueData, allOutstand
   if (!d?.dataIndex === undefined) return;
   const item = collectionByPaymode[d.dataIndex];
   if (!item) return;
-  setDrillData(prev => ({ ...prev, bar: {
-   name: `${item.name} — Collection Breakdown`,
-   metrics: [
-    { label: "Gross", value: formatFullINR(item.collection) },
-    { label: "Refund", value: formatFullINR(item.refund) },
-    { label: "Net", value: formatFullINR(item.net) },
-   ]
-  }}));
+  setDrillData(prev => ({
+   ...prev, bar: {
+    name: `${item.name} — Collection Breakdown`,
+    metrics: [
+     { label: "Gross", value: formatFullINR(item.collection) },
+     { label: "Refund", value: formatFullINR(item.refund) },
+     { label: "Net", value: formatFullINR(item.net) },
+    ]
+   }
+  }));
  }, [collectionByPaymode]);
 
  const handleLineClick = useCallback((_, d) => {
   if (d?.dataIndex === undefined) return;
   const item = revenueTrend[d.dataIndex];
   if (!item) return;
-  setDrillData(prev => ({ ...prev, line: {
-   name: `${item.name} — Revenue Details`,
-   metrics: [
-    { label: "Gross Revenue", value: formatFullINR(item.gross) },
-    { label: "Discount", value: formatFullINR(item.discount) },
-    { label: "Net Revenue", value: formatFullINR(item.net) },
-   ]
-  }}));
+  setDrillData(prev => ({
+   ...prev, line: {
+    name: `${item.name} — Revenue Details`,
+    metrics: [
+     { label: "Gross Revenue", value: formatFullINR(item.gross) },
+     { label: "Discount", value: formatFullINR(item.discount) },
+     { label: "Net Revenue", value: formatFullINR(item.net) },
+    ]
+   }
+  }));
  }, [revenueTrend]);
 
  const handlePieClick = useCallback((_, d) => {
@@ -190,28 +194,32 @@ const GraphWiseDetail = ({ stats, allCollectionData, allRevenueData, allOutstand
    const org = getStr(row, "organization", "Organization").toLowerCase();
    return item.label === "Cash Patient" ? org === "cash patient" : org !== "cash patient";
   }).length || 0;
-  setDrillData(prev => ({ ...prev, pie: {
-   name: `${item.label} — Outstanding`,
-   metrics: [
-    { label: "Amount", value: formatFullINR(item.value) },
-    { label: "Records", value: count.toLocaleString() },
-    { label: "Share", value: `${((item.value / total) * 100).toFixed(1)}%` },
-   ]
-  }}));
+  setDrillData(prev => ({
+   ...prev, pie: {
+    name: `${item.label} — Outstanding`,
+    metrics: [
+     { label: "Amount", value: formatFullINR(item.value) },
+     { label: "Records", value: count.toLocaleString() },
+     { label: "Share", value: `${((item.value / total) * 100).toFixed(1)}%` },
+    ]
+   }
+  }));
  }, [outstandingSplit, allOutstandingData]);
 
  const handleStackedClick = useCallback((_, d) => {
   if (d?.dataIndex === undefined) return;
   const item = revenueBySpeciality[d.dataIndex];
   if (!item) return;
-  setDrillData(prev => ({ ...prev, stacked: {
-   name: `${item.name} — Revenue`,
-   metrics: [
-    { label: "Gross", value: formatFullINR(item.gross) },
-    { label: "Discount", value: formatFullINR(item.discount) },
-    { label: "Net", value: formatFullINR(item.net) },
-   ]
-  }}));
+  setDrillData(prev => ({
+   ...prev, stacked: {
+    name: `${item.name} — Revenue`,
+    metrics: [
+     { label: "Gross", value: formatFullINR(item.gross) },
+     { label: "Discount", value: formatFullINR(item.discount) },
+     { label: "Net", value: formatFullINR(item.net) },
+    ]
+   }
+  }));
  }, [revenueBySpeciality]);
 
  if (loading) {
@@ -230,23 +238,6 @@ const GraphWiseDetail = ({ stats, allCollectionData, allRevenueData, allOutstand
   );
  }
 
- const summaryCards = [
-  { title: "Collection", items: [
-   { label: "Gross", value: formatFullINR(stats?.grossCollection), color: "#3b82f6" },
-   { label: "Refund", value: formatFullINR(stats?.refund), color: "#22c55e" },
-   { label: "Net", value: formatFullINR(stats?.netCollection), color: "#6366f1" },
-  ]},
-  { title: "Revenue", items: [
-   { label: "Gross", value: formatFullINR(stats?.grossRevenue), color: "#f59e0b" },
-   { label: "Discount", value: formatFullINR(stats?.discount), color: "#ef4444" },
-   { label: "Net", value: formatFullINR(stats?.revenue), color: "#10b981" },
-  ]},
-  { title: "Outstanding", items: [
-   { label: "Total", value: formatFullINR(stats?.outstanding), color: "#eab308" },
-   { label: "Cash Patient", value: formatFullINR(stats?.cashPatientOutstanding), color: "#f97316" },
-   { label: "Organization", value: formatFullINR(stats?.orgOutstanding), color: "#8b5cf6" },
-  ]},
- ];
 
  const chartSx = {
   "& .MuiChartsAxis-tickLabel": { fontSize: "0.7rem", fill: "#64748b" },
@@ -255,22 +246,6 @@ const GraphWiseDetail = ({ stats, allCollectionData, allRevenueData, allOutstand
 
  return (
   <Box sx={{ mt: 2 }}>
-   <Box sx={{ display: "flex", gap: 2, mb: 2, flexWrap: { xs: "wrap", md: "nowrap" } }}>
-    {summaryCards.map((card) => (
-     <Paper key={card.title} elevation={0} sx={{ ...CARD_STYLE, flex: "1 1 0", minWidth: { xs: "100%", sm: "calc(50% - 8px)", md: 0 }, p: 2 }}>
-      <Typography sx={{ fontWeight: 700, fontSize: "0.72rem", color: "#64748b", textTransform: "uppercase", letterSpacing: 1, mb: 1.5 }}>{card.title}</Typography>
-      <Box sx={{ display: "flex", gap: 1 }}>
-       {card.items.map((item) => (
-        <Box key={item.label} sx={{ flex: 1, textAlign: "center", p: 1, borderRadius: "10px", bgcolor: `${item.color}08`, border: `1px solid ${item.color}20` }}>
-         <Typography sx={{ fontSize: "0.6rem", color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", mb: 0.3 }}>{item.label}</Typography>
-         <Typography sx={{ fontSize: "0.88rem", fontWeight: 800, color: "#0f172a", lineHeight: 1.2 }}>{item.value}</Typography>
-        </Box>
-       ))}
-      </Box>
-     </Paper>
-    ))}
-   </Box>
-
    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
     <Box sx={CARD_STYLE}>
      <ChartHeader icon={<BarChartIcon />} title="Collection by Pay Mode" subtitle="Click bars for breakdown" color="#3b82f6" />
@@ -328,8 +303,9 @@ const GraphWiseDetail = ({ stats, allCollectionData, allRevenueData, allOutstand
          paddingAngle: 4,
          cornerRadius: 6,
          highlightScope: { fade: "global", highlight: "item" },
-         valueFormatter: (v) => formatFullINR(v.value),
+         valueFormatter: (v) => formatINR(v.value),
         }]}
+        margin={{ left: 10, right: 10, top: 20, bottom: 20 }}
         onItemClick={handlePieClick}
         sx={chartSx}
        />

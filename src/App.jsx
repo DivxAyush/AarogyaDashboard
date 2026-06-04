@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { ThemeProvider, createTheme, CssBaseline } from "@mui/material";
 
 // Import constants
@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard/HomeDashboard/Dashboard";
 import GraphDetailPage from "./pages/Dashboard/HomeDashboard/GraphDetail/GraphDetailPage";
 import Analytics from "./pages/Analytics";
 import Reports from "./pages/Reports";
+import { DataProvider } from "./context/DataContext";
 
 // ─────────────────────────────────────────────
 // MUI Theme — Light Blue Corporate Theme
@@ -129,9 +130,14 @@ const theme = createTheme({
   },
 });
 
-const ProtectedRoute = ({ children }) => {
+const ProtectedLayout = () => {
   const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
-  return token ? children : <Navigate to={ROUTES.LOGIN} replace />;
+  if (!token) return <Navigate to={ROUTES.LOGIN} replace />;
+  return (
+    <DataProvider>
+      <Outlet />
+    </DataProvider>
+  );
 };
 
 const PublicRoute = ({ children }) => {
@@ -148,11 +154,13 @@ const App = () => {
           {/* Public Route */}
           <Route path={ROUTES.LOGIN} element={<PublicRoute><Login /></PublicRoute>} />
 
-          {/* Protected Routes */}
-          <Route path={ROUTES.DASHBOARD} element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path={ROUTES.GRAPH_DETAIL} element={<ProtectedRoute><GraphDetailPage /></ProtectedRoute>} />
-          <Route path={ROUTES.ANALYTICS} element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-          <Route path={ROUTES.REPORTS} element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+          {/* Protected Routes inside Layout to preserve Context state */}
+          <Route element={<ProtectedLayout />}>
+            <Route path={ROUTES.DASHBOARD} element={<Dashboard />} />
+            <Route path={ROUTES.GRAPH_DETAIL} element={<GraphDetailPage />} />
+            <Route path={ROUTES.ANALYTICS} element={<Analytics />} />
+            <Route path={ROUTES.REPORTS} element={<Reports />} />
+          </Route>
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />

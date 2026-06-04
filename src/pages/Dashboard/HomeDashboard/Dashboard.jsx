@@ -36,14 +36,15 @@ import DashboardFilterBar from "../../../layouts/DashboardFilterBar";
 import OPDDashboard from "../OPDDashboard/OPDDashboard";
 import IPDDashboard from "../IPDDashboard/IPDDashboard";
 import PharmacyDashboard from "../PharmacyDashboard/PharmacyDashboard";
-import { getChartData, getDatasetData, getAllCollectionData, getAllRevenueData, getAllOutstandingData } from "../../../api/api_fun";
+import { getChartData } from "../../../api/api_fun";
 import { SUPERSET_CHART_ID, ROUTES } from "../../../utils/constants";
 import CardSkeletonLoading from "../../../components/LoadingStyles/CardSkeletonLoading";
+import { useData } from "../../../context/DataContext";
 
 // ─── Shared card dimensions ───────────────────────────────────────────────────
-const CARD_MIN_HEIGHT = 210; // px — ALL 4 cards must match this
-const CARD_PADDING = "20px 20px 0 20px"; // top/side padding (bottom handled by sparkline wrapper)
-const CARD_RADIUS = "18px";
+const CARD_MIN_HEIGHT = 130; // px — ALL cards must match this
+const CARD_PADDING = "12px 14px 0 14px"; // top/side padding (bottom handled by sparkline wrapper)
+const CARD_RADIUS = "16px";
 const CARD_SHADOW = "0 4px 24px rgba(25,118,210,0.08), 0 1px 4px rgba(0,0,0,0.04)";
 
 // ─── Mini sparkline ───────────────────────────────────────────────────────────
@@ -74,7 +75,6 @@ const STAT_CONFIG = [
   color: "#2563eb",
   subtitle: "Total net amount",
   format: (v) => { const n = Number(v); return !isNaN(n) ? `₹${n.toLocaleString("en-IN")}` : "₹0"; },
-  sql: `SELECT * FROM vw_collection WHERE "Receipt Amount" IS NOT NULL `,
  },
  {
   key: "grossCollection",
@@ -84,7 +84,6 @@ const STAT_CONFIG = [
   color: "#6366f1",
   subtitle: "Total gross amount",
   format: (v) => { const n = Number(v); return !isNaN(n) ? `₹${n.toLocaleString("en-IN")}` : "₹0"; },
-  sql: `SELECT * FROM vw_collection`,
  },
  {
   key: "refund",
@@ -94,7 +93,6 @@ const STAT_CONFIG = [
   color: "#0ea5e9",
   subtitle: "Total refunds",
   format: (v) => { const n = Number(v); return !isNaN(n) ? `₹${n.toLocaleString("en-IN")}` : "₹0"; },
-  sql: `SELECT * FROM vw_collection`,
  },
  {
   key: "revenue",
@@ -104,7 +102,6 @@ const STAT_CONFIG = [
   color: "#10b981",
   subtitle: "Total revenue",
   format: (v) => { const n = Number(v); return !isNaN(n) ? `₹${n.toLocaleString("en-IN")}` : "₹0"; },
-  sql: `SELECT * FROM vw_revenue`,
  },
  {
   key: "grossRevenue",
@@ -114,7 +111,6 @@ const STAT_CONFIG = [
   color: "#f59e0b",
   subtitle: "Total gross revenue",
   format: (v) => { const n = Number(v); return !isNaN(n) ? `₹${n.toLocaleString("en-IN")}` : "₹0"; },
-  sql: `SELECT * FROM vw_revenue`,
  },
  {
   key: "discount",
@@ -124,7 +120,6 @@ const STAT_CONFIG = [
   color: "#ef4444",
   subtitle: "Total discount",
   format: (v) => { const n = Number(v); return !isNaN(n) ? `₹${n.toLocaleString("en-IN")}` : "₹0"; },
-  sql: `SELECT * FROM vw_revenue`,
  },
  {
   key: "outstanding",
@@ -134,7 +129,6 @@ const STAT_CONFIG = [
   color: "#eab308",
   subtitle: "Total outstanding amount",
   format: (v) => { const n = Number(v); return !isNaN(n) ? `₹${n.toLocaleString("en-IN")}` : "₹0"; },
-  sql: `SELECT * FROM vw_outstanding`,
  },
  {
   key: "cashPatientOutstanding",
@@ -144,7 +138,6 @@ const STAT_CONFIG = [
   color: "#f97316",
   subtitle: "Outstanding for Cash Patients",
   format: (v) => { const n = Number(v); return !isNaN(n) ? `₹${n.toLocaleString("en-IN")}` : "₹0"; },
-  sql: `SELECT * FROM vw_outstanding WHERE organization='Cash Patient' `,
  },
  {
   key: "orgOutstanding",
@@ -154,7 +147,6 @@ const STAT_CONFIG = [
   color: "#8b5cf6",
   subtitle: "Outstanding for Organizations",
   format: (v) => { const n = Number(v); return !isNaN(n) ? `₹${n.toLocaleString("en-IN")}` : "₹0"; },
-  sql: `SELECT * FROM vw_outstanding WHERE organization!='Cash Patient' `,
  },
 ];
 
@@ -209,93 +201,19 @@ const Dashboard = () => {
 
 
 
- // All collection data state
- const [allCollectionData, setAllCollectionData] = useState([]);
- const [allCollectionLoading, setAllCollectionLoading] = useState(true);
-
- // All revenue data state
- const [allRevenueData, setAllRevenueData] = useState([]);
- const [allRevenueLoading, setAllRevenueLoading] = useState(true);
-
- // All outstanding data state
- const [allOutstandingData, setAllOutstandingData] = useState([]);
- const [allOutstandingLoading, setAllOutstandingLoading] = useState(true);
-
- // Dynamic Dropdown states
- const [siteCodes, setSiteCodes] = useState([]);
- const [specialities, setSpecialities] = useState([]);
-
- // Filter state
- const today = new Date();
- const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
- const firstDayOfMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
- const [filters, setFilters] = useState({
-  date: { from: firstDayOfMonthStr, to: todayStr, preset: "mtd" },
-  dashboard: "",
-  speciality: "",
-  siteCode: "",
- });
- const handleFilterChange = useCallback((newFilters) => {
-  setFilters(newFilters);
- }, []);
-
- useEffect(() => {
-  // Fetch distinct site codes
-  getDatasetData("SELECT DISTINCT site_code FROM vw_collection WHERE site_code IS NOT NULL")
-   .then((res) => {
-    if (res && res.length > 0) {
-     const codes = res.map((row) => row.site_code).filter(Boolean);
-     setSiteCodes(codes);
-    }
-   })
-   .catch((err) => console.error("Failed to fetch site codes:", err));
-
-  // Fetch distinct specialities
-  getDatasetData("SELECT DISTINCT speciality FROM vw_collection WHERE speciality IS NOT NULL")
-   .then((res) => {
-    if (res && res.length > 0) {
-     const specs = res.map((row) => row.speciality).filter(Boolean);
-     setSpecialities(specs);
-    }
-   })
-   .catch((err) => console.error("Failed to fetch specialities:", err));
- }, []);
-
- useEffect(() => {
-  setAllCollectionLoading(true);
-  setAllRevenueLoading(true);
-  setAllOutstandingLoading(true);
-
-  getAllCollectionData(filters)
-   .then((res) => {
-    setAllCollectionData(res || []);
-    setAllCollectionLoading(false);
-   })
-   .catch((err) => {
-    console.error("Failed to fetch all collection data:", err);
-    setAllCollectionLoading(false);
-   });
-
-  getAllRevenueData(filters)
-   .then((res) => {
-    setAllRevenueData(res || []);
-    setAllRevenueLoading(false);
-   })
-   .catch((err) => {
-    console.error("Failed to fetch all revenue data:", err);
-    setAllRevenueLoading(false);
-   });
-
-  getAllOutstandingData(filters)
-   .then((res) => {
-    setAllOutstandingData(res || []);
-    setAllOutstandingLoading(false);
-   })
-   .catch((err) => {
-    console.error("Failed to fetch all outstanding data:", err);
-    setAllOutstandingLoading(false);
-   });
- }, [filters]);
+ // Use Global Context for Data and Filters
+ const {
+  filters,
+  handleFilterChange,
+  siteCodes,
+  specialities,
+  allCollectionData,
+  allCollectionLoading,
+  allRevenueData,
+  allRevenueLoading,
+  allOutstandingData,
+  allOutstandingLoading,
+ } = useData();
 
  useEffect(() => {
   getChartData(SUPERSET_CHART_ID)
@@ -312,36 +230,38 @@ const Dashboard = () => {
 
 
  // 3-dot modal handler
- const handleCardClick = useCallback(async (stat) => {
+ const handleCardClick = useCallback((stat) => {
   setModalTitle(stat.title);
   setModalKey(stat.key);
   setDrillData([]);
   setDrillLoading(true);
   setModalOpen(true);
 
-  try {
-   let query = stat.sql;
-   if (query.toUpperCase().includes("WHERE")) {
-    if (filters.date?.from) query += ` AND CAST(date AS DATE) >= '${filters.date.from}'`;
-    if (filters.date?.to) query += ` AND CAST(date AS DATE) <= '${filters.date.to}'`;
-    if (filters.siteCode) query += ` AND site_code = '${filters.siteCode}'`;
-    if (filters.speciality) query += ` AND speciality = '${filters.speciality}'`;
-   } else {
-    query += " WHERE 1=1";
-    if (filters.date?.from) query += ` AND CAST(date AS DATE) >= '${filters.date.from}'`;
-    if (filters.date?.to) query += ` AND CAST(date AS DATE) <= '${filters.date.to}'`;
-    if (filters.siteCode) query += ` AND site_code = '${filters.siteCode}'`;
-    if (filters.speciality) query += ` AND speciality = '${filters.speciality}'`;
+  setTimeout(() => {
+   let dataset = [];
+   if (stat.section === "collection") dataset = allCollectionData;
+   else if (stat.section === "revenue") dataset = allRevenueData;
+   else if (stat.section === "outstanding") dataset = allOutstandingData;
+
+   let filtered = dataset || [];
+   if (stat.key === "netCollection") {
+    filtered = filtered.filter(r => r["Receipt Amount"] !== null && r["Receipt Amount"] !== undefined);
+   } else if (stat.key === "cashPatientOutstanding") {
+    filtered = filtered.filter(r => {
+      const org = r.organization || r.Organization;
+      return org && org.toLowerCase() === "cash patient";
+    });
+   } else if (stat.key === "orgOutstanding") {
+    filtered = filtered.filter(r => {
+      const org = r.organization || r.Organization;
+      return !org || org.toLowerCase() !== "cash patient";
+    });
    }
 
-   const result = await getDatasetData(query);
-   setDrillData(result || []);
-  } catch (err) {
-   setDrillData([]);
-  } finally {
+   setDrillData(filtered);
    setDrillLoading(false);
-  }
- }, [filters]);
+  }, 100);
+ }, [allCollectionData, allRevenueData, allOutstandingData]);
 
  const handleModalClose = useCallback(() => {
   setModalOpen(false);
@@ -443,10 +363,10 @@ const Dashboard = () => {
         const formattedValue = stat.format(value);
         const str = String(formattedValue || "");
         // font-size shrinks for long text — card height stays FIXED
-        let valueFontSize = { xs: "1.7rem", md: "1.85rem" };
-        if (str.length > 18) valueFontSize = { xs: "1.05rem", md: "1.15rem" };
-        else if (str.length > 14) valueFontSize = { xs: "1.2rem", md: "1.35rem" };
-        else if (str.length > 10) valueFontSize = { xs: "1.45rem", md: "1.6rem" };
+        let valueFontSize = { xs: "1.4rem", md: "1.55rem" };
+        if (str.length > 18) valueFontSize = { xs: "0.9rem", md: "1.05rem" };
+        else if (str.length > 14) valueFontSize = { xs: "1.1rem", md: "1.2rem" };
+        else if (str.length > 10) valueFontSize = { xs: "1.25rem", md: "1.35rem" };
 
         return (
          /* flex: 1 1 calc(33.333% - 16px) makes it wrap neatly for 3 columns */
@@ -484,17 +404,17 @@ const Dashboard = () => {
             }}
            >
             {/* Icon + kebab */}
-            <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", mb: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", mb: 1 }}>
              <Box
               sx={{
-               width: 48, height: 48,
-               borderRadius: "14px",
+               width: 36, height: 36,
+               borderRadius: "10px",
                background: alpha(stat.color, 0.12),
                display: "flex", alignItems: "center", justifyContent: "center",
                flexShrink: 0,
               }}
              >
-              {stat.icon}
+              {React.cloneElement(stat.icon, { sx: { fontSize: 20, color: stat.color } })}
              </Box>
              <IconButton size="small" sx={{ color: "#94a3b8", mt: -0.5, mr: -0.5 }}
               onClick={(e) => { e.stopPropagation(); handleCardClick(stat); }}
@@ -504,7 +424,7 @@ const Dashboard = () => {
             </Box>
 
             {/* Label */}
-            <Typography sx={{ color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2, fontSize: "0.68rem", mb: 0.5 }}>
+            <Typography sx={{ color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2, fontSize: "0.6rem", mb: 0.2 }}>
              {stat.title}
             </Typography>
 
@@ -527,14 +447,14 @@ const Dashboard = () => {
 
             {/* Subtitle */}
             {stat.subtitle && (
-             <Typography variant="caption" sx={{ color: "#94a3b8", display: "block", fontSize: "0.72rem", mb: 2 }}>
+             <Typography variant="caption" sx={{ color: "#94a3b8", display: "block", fontSize: "0.68rem", mb: 0.5 }}>
               {stat.subtitle}
              </Typography>
             )}
            </CardContent>
 
            {/* Sparkline — pinned at bottom */}
-           <Box sx={{ px: "20px", pb: "12px", flexShrink: 0 }}>
+           <Box sx={{ px: "14px", pb: "8px", flexShrink: 0 }}>
             <MiniSparkline color={stat.color} />
            </Box>
           </Card>
