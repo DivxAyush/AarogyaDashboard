@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
  Box,
  Typography,
@@ -28,7 +28,6 @@ import EventNoteIcon from "@mui/icons-material/EventNote";
 import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import DashboardLayout from "../../../layouts/DashboardLayout";
-import PaymentChart from "../../../components/PaymentChart";
 import PaymentDetailsModal from "./Detail/PaymentDetailsModal";
 import RevenueDetailsModal from "./Detail/RevenueDetailsModal";
 import OutstandingDetailsModal from "./Detail/OutstandingDetailsModal";
@@ -36,8 +35,7 @@ import DashboardFilterBar from "../../../layouts/DashboardFilterBar";
 import OPDDashboard from "../OPDDashboard/OPDDashboard";
 import IPDDashboard from "../IPDDashboard/IPDDashboard";
 import PharmacyDashboard from "../PharmacyDashboard/PharmacyDashboard";
-import { getChartData } from "../../../api/api_fun";
-import { SUPERSET_CHART_ID, ROUTES } from "../../../utils/constants";
+import { ROUTES } from "../../../utils/constants";
 import CardSkeletonLoading from "../../../components/LoadingStyles/CardSkeletonLoading";
 import { useData } from "../../../context/DataContext";
 
@@ -229,8 +227,16 @@ const FEATURES = [
 /* ═══════════════════════ DASHBOARD COMPONENT ═══════════════════════ */
 const Dashboard = () => {
  const navigate = useNavigate();
- const [activeTab, setActiveTab] = useState("Home Dashboard");
- const [chartData, setChartData] = useState([]);
+ const location = useLocation();
+ const [activeTab, setActiveTab] = useState(location.state?.defaultTab || "Home Dashboard");
+
+ useEffect(() => {
+  window.scrollTo(0, 0);
+  if (location.state?.defaultTab) {
+   setActiveTab(location.state.defaultTab);
+  }
+ }, [location.state?.defaultTab, location.pathname]);
+
  const [statsLoading, setStatsLoading] = useState(true);
  const [statsError, setStatsError] = useState("");
 
@@ -258,18 +264,11 @@ const Dashboard = () => {
  } = useData();
 
  useEffect(() => {
-  getChartData(SUPERSET_CHART_ID)
-   .then((result) => {
-    setChartData(result || []);
-    setStatsLoading(false);
-   })
-   .catch((err) => {
-    setStatsError("Could not load stats: " + err.message);
-    setStatsLoading(false);
-   });
- }, []);
-
-
+  // If data is fetched via DataContext, we can stop the stats loader once everything is loaded
+  if (!allCollectionLoading && !allRevenueLoading && !allOutstandingLoading) {
+   setStatsLoading(false);
+  }
+ }, [allCollectionLoading, allRevenueLoading, allOutstandingLoading]);
 
  // 3-dot modal handler
  const handleCardClick = useCallback((stat) => {

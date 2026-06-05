@@ -29,7 +29,7 @@ const AnalysisSkeleton = () => {
                         <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 250, mt: 4, pb: 2 }}>
                             {[1, 2, 3, 4, 5, 6].map(j => (
                                 <Box key={j} sx={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-                                    <Skeleton animation="wave" variant="rounded" width="60%" height={`${Math.random() * 60 + 20}%`} sx={{ borderRadius: '4px 4px 0 0' }} />
+                                    <Skeleton animation="wave" variant="rounded" width="60%" height={`${(j * 17) % 60 + 30}%`} sx={{ borderRadius: '4px 4px 0 0' }} />
                                 </Box>
                             ))}
                         </Box>
@@ -49,7 +49,7 @@ const AnalysisSkeleton = () => {
                         <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 300, mt: 4, pb: 2 }}>
                             {[1, 2, 3, 4, 5, 6, 7, 8].map(j => (
                                 <Box key={j} sx={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-                                    <Skeleton animation="wave" variant="rounded" width="50%" height={`${Math.random() * 70 + 20}%`} sx={{ borderRadius: '4px 4px 0 0' }} />
+                                    <Skeleton animation="wave" variant="rounded" width="50%" height={`${(j * 23) % 70 + 20}%`} sx={{ borderRadius: '4px 4px 0 0' }} />
                                 </Box>
                             ))}
                         </Box>

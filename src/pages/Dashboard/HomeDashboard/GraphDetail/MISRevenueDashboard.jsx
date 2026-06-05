@@ -254,9 +254,9 @@ const MISRevenueDashboard = ({ allRevenueData, loading }) => {
 
   return {
    modules: modulesData,
-   organizations: fullOrganizations.slice(0, 10),
-   consultants: fullConsultants.slice(0, 10),
-   serviceCategories: fullServiceCategories.slice(0, 10),
+   organizations: fullOrganizations.slice(0, 5),
+   consultants: fullConsultants.slice(0, 5),
+   serviceCategories: fullServiceCategories.slice(0, 5),
    fullModules: allMods,
    fullOrganizations,
    fullConsultants,
@@ -299,7 +299,7 @@ const MISRevenueDashboard = ({ allRevenueData, loading }) => {
      <Box sx={{ flex: 1, minWidth: "120px" }}>
       <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#1e293b" }}>{title}</Typography>
       {fullDataset && fullDataset.length > dataset.length && (
-       <Typography sx={{ fontSize: "0.65rem", color: "#64748b", fontWeight: 600 }}>Showing Top 10 entries</Typography>
+       <Typography sx={{ fontSize: "0.65rem", color: "#64748b", fontWeight: 600 }}>Showing Top 5 entries</Typography>
       )}
      </Box>
      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexShrink: 0 }}>
@@ -515,14 +515,14 @@ const MISRevenueDashboard = ({ allRevenueData, loading }) => {
      </Box>
     </Paper>
 
-    {renderBarChart("Service Category Wise Revenue", serviceCategories, fullServiceCategories, "serviceCategory", 420)}
+    {renderBarChart("Service Category Wise Revenue", serviceCategories, fullServiceCategories, "serviceCategory", 320)}
    </Box>
 
-   {/* BOTTOM ROW: Organization, Consultant */}
-   <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
-    {renderBarChart("Module Wise Revenue", [...modules].sort((a, b) => b.gross - a.gross), fullModules, "module", 420)}
-    {renderBarChart("Organization Wise Revenue", organizations, fullOrganizations, "organization", 420)}
-    {renderBarChart("Consultant Wise Revenue", consultants, fullConsultants, "consultant", 420)}
+   {/* BOTTOM ROW: Module, Organization, Consultant */}
+   <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" }, gap: 2 }}>
+    {renderBarChart("Module Wise Revenue", [...modules].sort((a, b) => b.gross - a.gross), fullModules, "module", 320)}
+    {renderBarChart("Organization Wise Revenue", organizations, fullOrganizations, "organization", 320)}
+    {renderBarChart("Consultant Wise Revenue", consultants, fullConsultants, "consultant", 320)}
    </Box>
 
    <PaymentDetailsModal

@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback, useContext } from "react";
-import { getDistinctValues, getAllCollectionData, getAllRevenueData, getAllOutstandingData } from "../api/api_fun";
+import { getDistinctValues, getAllCollectionData, getAllRevenueData, getAllOutstandingData, getOpdPatientStats, getOpdFinancialStats, getIpdPatientStats, getIpdOccupancyStats } from "../api/api_fun";
 
 export const DataContext = createContext();
 
@@ -38,6 +38,14 @@ export const DataProvider = ({ children }) => {
   const [allOutstandingData, setAllOutstandingData] = useState([]);
   const [allOutstandingLoading, setAllOutstandingLoading] = useState(true);
 
+  const [opdPatientData, setOpdPatientData] = useState([]);
+  const [opdFinancialData, setOpdFinancialData] = useState([]);
+  const [opdStatsLoading, setOpdStatsLoading] = useState(true);
+
+  const [ipdPatientData, setIpdPatientData] = useState([]);
+  const [ipdOccupancyData, setIpdOccupancyData] = useState([]);
+  const [ipdStatsLoading, setIpdStatsLoading] = useState(true);
+
   // ─── Fetch Dropdown Options on Mount ───
   useEffect(() => {
     // ID 1 is vw_collection
@@ -65,6 +73,8 @@ export const DataProvider = ({ children }) => {
     setAllCollectionLoading(true);
     setAllRevenueLoading(true);
     setAllOutstandingLoading(true);
+    setOpdStatsLoading(true);
+    setIpdStatsLoading(true);
 
     getAllCollectionData(filters)
       .then((res) => {
@@ -95,6 +105,17 @@ export const DataProvider = ({ children }) => {
         console.error("Failed to fetch all outstanding data:", err);
         setAllOutstandingLoading(false);
       });
+
+    Promise.all([
+      getOpdPatientStats(filters).then(res => setOpdPatientData(res || [])).catch(console.error),
+      getOpdFinancialStats(filters).then(res => setOpdFinancialData(res || [])).catch(console.error)
+    ]).finally(() => setOpdStatsLoading(false));
+
+    Promise.all([
+      getIpdPatientStats(filters).then(res => setIpdPatientData(res || [])).catch(console.error),
+      getIpdOccupancyStats(filters).then(res => setIpdOccupancyData(res || [])).catch(console.error)
+    ]).finally(() => setIpdStatsLoading(false));
+
   }, [filters]);
 
   const value = {
@@ -108,6 +129,12 @@ export const DataProvider = ({ children }) => {
     allRevenueLoading,
     allOutstandingData,
     allOutstandingLoading,
+    opdPatientData,
+    opdFinancialData,
+    opdStatsLoading,
+    ipdPatientData,
+    ipdOccupancyData,
+    ipdStatsLoading,
   };
 
   return (

@@ -23,30 +23,56 @@ const toLocalISODate = (d) => {
  const GraphDetailPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { section = "collection", cardTitle = "Collection Analytics" } = location.state || {};
+  const { section = "collection", cardTitle = "Collection Analytics", filterModule } = location.state || {};
 
-  const [activeTab, setActiveTab] = useState("Home Dashboard");
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
+  const initialTab = filterModule ? `${filterModule.toUpperCase()} Dashboard` : "Home Dashboard";
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [collectionSubTab, setCollectionSubTab] = useState(0);
   const [revenueSubTab, setRevenueSubTab] = useState(0);
   const [outstandingSubTab, setOutstandingSubTab] = useState(0);
   const { filters, handleFilterChange, siteCodes, specialities, allCollectionData, allCollectionLoading, allRevenueData, allRevenueLoading,
    allOutstandingData, allOutstandingLoading, } = useData();
 
+  const filteredCollectionData = useMemo(() => {
+    if (!filterModule) return allCollectionData;
+    return allCollectionData?.filter(r => {
+      const mod = (r.module || r.Module)?.toUpperCase();
+      if (filterModule.toUpperCase() === "IPD") {
+        return mod === "IPD / EMERGENCY (ADVANCE)" || mod === "IPD / EMERGENCY (DISCHARGE)";
+      }
+      return mod === filterModule.toUpperCase();
+    }) || [];
+  }, [allCollectionData, filterModule]);
+
+  const filteredRevenueData = useMemo(() => {
+    if (!filterModule) return allRevenueData;
+    return allRevenueData?.filter(r => (r.module || r.Module)?.toUpperCase() === filterModule.toUpperCase()) || [];
+  }, [allRevenueData, filterModule]);
+
+  const filteredOutstandingData = useMemo(() => {
+    if (!filterModule) return allOutstandingData;
+    return allOutstandingData?.filter(r => (r.module || r.Module)?.toUpperCase() === filterModule.toUpperCase()) || [];
+  }, [allOutstandingData, filterModule]);
+
   const stats = useMemo(() => {
-   const netCollection = (allCollectionData || []).reduce((a, r) => a + Number(r["Receipt Amount"] || 0), 0);
-   const grossCollection = (allCollectionData || []).reduce((a, r) => a + Number(r.collection || r.Collection || 0), 0);
-   const refund = (allCollectionData || []).reduce((a, r) => a + Number(r.refund || r.Refund || 0), 0);
-   const revenue = (allRevenueData || []).reduce((a, r) => a + Number(r.oh_amt_net || 0), 0);
-   const grossRevenue = (allRevenueData || []).reduce((a, r) => a + Number(r.grossamount || 0), 0);
-   const discount = (allRevenueData || []).reduce((a, r) => a + Number(r.discount || r.Discount || 0), 0);
-   const outstanding = (allOutstandingData || []).reduce((a, r) => a + Number(r.outstanding || r.Outstanding || r.balance || r.Balance || 0), 0);
-   const cashPatientOutstanding = (allOutstandingData || []).reduce((a, r) => {
+   const netCollection = (filteredCollectionData || []).reduce((a, r) => a + Number(r["Receipt Amount"] || 0), 0);
+   const grossCollection = (filteredCollectionData || []).reduce((a, r) => a + Number(r.collection || r.Collection || 0), 0);
+   const refund = (filteredCollectionData || []).reduce((a, r) => a + Number(r.refund || r.Refund || 0), 0);
+   const revenue = (filteredRevenueData || []).reduce((a, r) => a + Number(r.oh_amt_net || 0), 0);
+   const grossRevenue = (filteredRevenueData || []).reduce((a, r) => a + Number(r.grossamount || 0), 0);
+   const discount = (filteredRevenueData || []).reduce((a, r) => a + Number(r.discount || r.Discount || 0), 0);
+   const outstanding = (filteredOutstandingData || []).reduce((a, r) => a + Number(r.outstanding || r.Outstanding || r.balance || r.Balance || 0), 0);
+   const cashPatientOutstanding = (filteredOutstandingData || []).reduce((a, r) => {
     const isCash = (r.organization || r.Organization || "").toLowerCase() === "cash patient";
     return isCash ? a + Number(r.outstanding || r.Outstanding || r.balance || r.Balance || 0) : a;
    }, 0);
    const orgOutstanding = outstanding - cashPatientOutstanding;
    return { netCollection, grossCollection, refund, revenue, grossRevenue, discount, outstanding, cashPatientOutstanding, orgOutstanding };
-  }, [allCollectionData, allRevenueData, allOutstandingData]);
+  }, [filteredCollectionData, filteredRevenueData, filteredOutstandingData]);
 
   const loading = allCollectionLoading || allRevenueLoading || allOutstandingLoading;
 
@@ -61,7 +87,11 @@ const toLocalISODate = (d) => {
      activeTab={activeTab}
      onTabChange={(tab) => {
       setActiveTab(tab);
-      if (tab !== "Home Dashboard") navigate("/");
+      if (tab !== "Home Dashboard" && tab !== `${filterModule?.toUpperCase() || ''} Dashboard`) {
+          navigate("/", { state: { defaultTab: tab } });
+      } else {
+          navigate("/", { state: { defaultTab: tab } });
+      }
      }}
      siteCodes={siteCodes}
      specialities={specialities}
@@ -77,7 +107,7 @@ const toLocalISODate = (d) => {
       overflowX: "auto",
      }}>
       <IconButton
-       onClick={() => navigate(-1)}
+       onClick={() => navigate("/", { state: { defaultTab: activeTab } })}
        sx={{
         bgcolor: `${sectionColor}12`, color: sectionColor,
         "&:hover": { bgcolor: `${sectionColor}22` },
@@ -252,12 +282,12 @@ const toLocalISODate = (d) => {
       <>
        {collectionSubTab === 0 ? (
         <MISCollectionDashboard
-         allCollectionData={allCollectionData}
+         allCollectionData={filteredCollectionData}
          loading={loading}
         />
        ) : (
         <MISCollectionAnalysis
-         allCollectionData={allCollectionData}
+         allCollectionData={filteredCollectionData}
          loading={loading}
         />
        )}
@@ -266,12 +296,12 @@ const toLocalISODate = (d) => {
       <>
        {revenueSubTab === 0 ? (
         <MISRevenueDashboard
-         allRevenueData={allRevenueData}
+         allRevenueData={filteredRevenueData}
          loading={loading}
         />
        ) : (
         <MISRevenueAnalysis
-         allRevenueData={allRevenueData}
+         allRevenueData={filteredRevenueData}
          loading={loading}
         />
        )}
@@ -280,12 +310,12 @@ const toLocalISODate = (d) => {
       <>
        {outstandingSubTab === 0 ? (
         <MISOutstandingDashboard
-         allOutstandingData={allOutstandingData}
+         allOutstandingData={filteredOutstandingData}
          loading={loading}
         />
        ) : (
         <MISOutstandingAnalysis
-         allOutstandingData={allOutstandingData}
+         allOutstandingData={filteredOutstandingData}
          loading={loading}
         />
        )}
@@ -293,9 +323,9 @@ const toLocalISODate = (d) => {
      ) : (
       <GraphWiseDetail
        stats={stats}
-       allCollectionData={allCollectionData}
-       allRevenueData={allRevenueData}
-       allOutstandingData={allOutstandingData}
+       allCollectionData={filteredCollectionData}
+       allRevenueData={filteredRevenueData}
+       allOutstandingData={filteredOutstandingData}
        loading={loading}
        activeSection={section}
       />

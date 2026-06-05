@@ -154,8 +154,31 @@ export async function getAllOutstandingData(filters) {
   if (filters) {
     if (filters.date?.from) query += ` AND CAST(date AS DATE) >= '${filters.date.from}'`;
     if (filters.date?.to) query += ` AND CAST(date AS DATE) <= '${filters.date.to}'`;
-    if (filters.siteCode) query += ` AND site_code = '${filters.siteCode}'`;
     if (filters.speciality) query += ` AND speciality = '${filters.speciality}'`;
   }
+  return await getDatasetData(query);
+}
+
+export async function getOpdPatientStats(filters) {
+  let query = "SELECT * FROM vw_opd WHERE 1=1";
+  return await getDatasetData(query);
+}
+
+export async function getOpdFinancialStats(filters) {
+  let query = "SELECT * FROM vw_opdfinancial WHERE 1=1";
+  if (filters) {
+    if (filters.date?.from) query += ` AND CAST(date AS DATE) >= '${filters.date.from}'`;
+    if (filters.date?.to) query += ` AND CAST(date AS DATE) <= '${filters.date.to}'`;
+  }
+  return await getDatasetData(query);
+}
+
+export async function getIpdPatientStats(filters) {
+  let query = "SELECT * FROM vw_ipd WHERE 1=1";
+  return await getDatasetData(query);
+}
+
+export async function getIpdOccupancyStats(filters) {
+  let query = "SELECT * FROM vw_currentoccupancy WHERE 1=1";
   return await getDatasetData(query);
 }
